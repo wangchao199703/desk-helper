@@ -1,0 +1,2082 @@
+<Window x:Class="MinimalTodoApp.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dd="urn:gong-wpf-dragdrop"
+        xmlns:tb="clr-namespace:H.NotifyIcon;assembly=H.NotifyIcon.Wpf"
+        xmlns:v="clr-namespace:MinimalTodoApp.Views"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="Todo" Height="640" Width="680"
+        Icon="/Assets/app.ico"
+        MinHeight="420" MinWidth="320"
+        ShowInTaskbar="False"
+        WindowStyle="None" ResizeMode="CanResize"
+        AllowsTransparency="True" Background="Transparent"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="Microsoft YaHei UI, Segoe UI">
+
+    <!-- 自定义窗口外观：去掉系统默认标题栏，自绘标题栏，圆角，但保留拖动/缩放/贴边 -->
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="30" ResizeBorderThickness="6"
+                            CornerRadius="0" GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- 象限卡片:勾选框 + 标题 + 倒计时;勾选直接走既有完成流程。
+             放 Window 级:四象限(QuadrantArea)与标签看板(TagBoardArea)两个视图共用——
+             若放在某视图局部 Grid.Resources,另一视图模板实例化时 StaticResource 解析失败,
+             XamlParseException 会被布局重试无限触发(全局异常兜底反复写 crash.log,表现为卡死)。 -->
+        <DataTemplate x:Key="QuadrantCardTemplate">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="6" Margin="0,0,0,4"
+                    BorderBrush="{DynamicResource Divider}" BorderThickness="1" Padding="8,6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox Grid.Column="0" VerticalAlignment="Top" Margin="0,1,8,0"
+                              IsChecked="{Binding IsCompleted, Mode=TwoWay}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontSize="13"
+                                   LineHeight="20" LineStackingStrategy="BlockLineHeight"
+                                   Foreground="{DynamicResource PrimaryText}" />
+                        <TextBlock Text="{Binding DueCountdownText}" FontSize="11" Margin="0,2,0,0"
+                                   Foreground="{DynamicResource MutedText}"
+                                   Visibility="{Binding HasDueDate, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+        <!-- 象限/标签容器内 ListBox:透明无边框、卡片自绘选中、禁横向滚动 -->
+        <Style x:Key="QuadrantListBox" TargetType="ListBox" BasedOn="{StaticResource FlatListBox}">
+            <Setter Property="ItemTemplate" Value="{StaticResource QuadrantCardTemplate}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <ContentPresenter />
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 收集箱便签项模板(未分组列表与各分组列表共用):图标 + 标题;右键删除 -->
+        <DataTemplate x:Key="NoteItemTemplate">
+            <Grid Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+                  ToolTip="{Binding DisplayTitle}">
+                <Grid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{DynamicResource S.Note.Rename}" Click="NoteRename_Click" />
+                        <MenuItem Header="{DynamicResource S.Note.Delete}" Click="InboxDeleteNote_Click" />
+                    </ContextMenu>
+                </Grid.ContextMenu>
+                <Grid.ColumnDefinitions>
+                    <!-- 折叠箭头占位:让便签图标与上级「分组」图标对齐(叶子节点无展开箭头) -->
+                    <ColumnDefinition Width="14" />
+                    <ColumnDefinition Width="18" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="1" Text="&#xE70B;"
+                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="{DynamicResource SecondaryText}" />
+                <!-- 标题:非编辑态显示文本;编辑态显示输入框(右键「重命名」/ 双击进入) -->
+                <TextBlock Grid.Column="2" Text="{Binding DisplayTitle}" Margin="6,0,0,0"
+                           VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource PrimaryText}"
+                           Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                <TextBox Grid.Column="2" Margin="6,0,0,0" FontSize="12" Padding="2,1"
+                         Style="{StaticResource FlatTextBox}" VerticalAlignment="Center"
+                         Text="{Binding CustomTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"
+                         IsVisibleChanged="NoteTitleEdit_IsVisibleChanged"
+                         LostKeyboardFocus="NoteTitleEdit_LostFocus"
+                         KeyDown="NoteTitleEdit_KeyDown" />
+            </Grid>
+        </DataTemplate>
+
+        <!-- 便签项容器:单击=选中→打开便签;双击=重命名.
+             选中高亮以「便签是否为当前激活项」(Note.IsActive,全局唯一)为依据,而非各 ListBox 自身的
+             IsSelected——收集箱里未分组/各分组分属多个 ListBox,用 IsSelected 会出现多个残留色块. -->
+        <Style x:Key="NoteItemContainerStyle" TargetType="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Margin" Value="0,1" />
+            <EventSetter Event="MouseDoubleClick" Handler="NoteItem_DoubleClick" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Grid>
+                            <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
+                            <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                            <Border x:Name="b" Background="Transparent" Padding="10,8">
+                                <ContentPresenter VerticalAlignment="Center" />
+                            </Border>
+                            <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
+                                    Background="{DynamicResource Accent}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="hover" Property="Opacity" Value="1" />
+                            </Trigger>
+                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                <Setter TargetName="ind" Property="Opacity" Value="1" />
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 折叠侧栏窄条:便签/分组图标按钮(高度与上方分组项一致) -->
+        <Style x:Key="RailIconButtonStyle" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,1" />
+        </Style>
+
+        <!-- 窄条可选中图标按钮(便签/便签分组共用):选中态=底色+左侧强调色竖条,
+             与展开态侧栏项完全一致的视觉强度(仅淡底色在 40px 窄条里几乎不可见)。
+             两个触发器分别对便签(IsActive)与分组(IsCollapsed+HasActiveNote)生效,
+             绑定到对方不存在的属性时静默不命中,因此可共用同一模板. -->
+        <Style x:Key="RailNoteButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Margin" Value="0,1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
+                            <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
+                                    Background="{DynamicResource Accent}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="hover" Property="Opacity" Value="1" />
+                            </Trigger>
+                            <!-- 便签:当前激活便签 -->
+                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                <Setter TargetName="ind" Property="Opacity" Value="1" />
+                            </DataTrigger>
+                            <!-- 便签分组:折叠且组内含激活便签(被隐藏便签的兜底色块) -->
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsCollapsed}" Value="True" />
+                                    <Condition Binding="{Binding HasActiveNote}" Value="True" />
+                                </MultiDataTrigger.Conditions>
+                                <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                <Setter TargetName="ind" Property="Opacity" Value="1" />
+                            </MultiDataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- 圆角外壳：AllowsTransparency 下用 Border 自绘圆角 -->
+    <Border x:Name="RootBorder" Background="{DynamicResource WindowBg}" CornerRadius="10"
+            BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+            SnapsToDevicePixels="True">
+        <Border.Clip>
+            <RectangleGeometry x:Name="RootClip" RadiusX="10" RadiusY="10"
+                               Rect="0,0,680,640" />
+        </Border.Clip>
+        <Grid>
+            <!-- 系统托盘图标 -->
+            <tb:TaskbarIcon x:Name="TrayIcon"
+                            ToolTipText="{DynamicResource S.Tray.ToolTip}"
+                            IconSource="/Assets/app.ico"
+                            TrayMouseDoubleClick="TrayIcon_DoubleClick">
+                <tb:TaskbarIcon.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{DynamicResource S.Tray.Show}" Click="ShowMenuItem_Click" />
+                        <Separator />
+                        <MenuItem Header="{DynamicResource S.Tray.Exit}" Click="ExitMenuItem_Click" />
+                    </ContextMenu>
+                </tb:TaskbarIcon.ContextMenu>
+            </tb:TaskbarIcon>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- ==================== 自定义标题栏（按钮在右；整条可拖动 + 右键菜单） ==================== -->
+                <Grid Grid.Row="0" Background="{DynamicResource TitleBarBg}"
+                      shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                      MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- App 名称（左） -->
+                    <TextBlock Grid.Column="0" Text="✓ Todo" VerticalAlignment="Center"
+                               Margin="14,0,0,0" FontWeight="SemiBold" FontSize="14"
+                               Foreground="{DynamicResource PrimaryText}" />
+
+                    <!-- 置顶按钮 + 设置（三横）按钮：位于交通灯左侧 -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <!-- 应用置顶图钉：勾选则窗口始终最前(替代旧的右键标题栏菜单) -->
+                        <ToggleButton x:Name="AlwaysOnTopToggle" Style="{StaticResource CaptionToggleButton}"
+                                      IsChecked="{Binding AlwaysOnTop, Mode=TwoWay}"
+                                      ToolTip="{DynamicResource S.AlwaysOnTop}">
+                            <TextBlock Text="&#xE718;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" />
+                        </ToggleButton>
+                    <Grid VerticalAlignment="Center">
+                        <ToggleButton x:Name="SettingsToggle" Style="{StaticResource CaptionToggleButton}"
+                                      ToolTip="{DynamicResource S.Tip.Menu}">
+                            <TextBlock Text="&#xE700;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" />
+                        </ToggleButton>
+                        <Popup IsOpen="{Binding IsChecked, ElementName=SettingsToggle}"
+                               PlacementTarget="{Binding ElementName=SettingsToggle}"
+                               Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                            <Border Background="{DynamicResource PopupBg}" CornerRadius="8"
+                                    BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                    Padding="6" Margin="6" MinWidth="160">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                </Border.Effect>
+                                <StackPanel>
+                                    <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                            Padding="10,8" Click="Settings_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="14" Width="20" VerticalAlignment="Center" />
+                                            <TextBlock Text="{DynamicResource S.MenuSettings}" FontSize="13" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- 语言切换:🌐 语言 标题 + 中文/English 选项(当前项打勾) -->
+                                    <Border Height="1" Background="{DynamicResource Divider}" Margin="4,6" />
+                                    <StackPanel Orientation="Horizontal" Margin="10,2,0,4">
+                                        <TextBlock Text="&#xE774;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="13" Width="20" Foreground="{DynamicResource MutedText}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{DynamicResource S.MenuLanguage}"
+                                                   FontSize="12" Foreground="{DynamicResource MutedText}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                            Padding="10,7" Tag="zh-CN" Click="Language_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="✓" Width="16" FontSize="12"
+                                                       Visibility="{Binding IsChineseSelected, Converter={StaticResource BoolToVis}}" />
+                                            <TextBlock Text="中文" FontSize="13" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                            Padding="10,7" Tag="en" Click="Language_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="✓" Width="16" FontSize="12"
+                                                       Visibility="{Binding IsEnglishSelected, Converter={StaticResource BoolToVis}}" />
+                                            <TextBlock Text="English" FontSize="13" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    </StackPanel>
+
+                    <!-- 交通灯（右）：关闭(红) / 最小化(黄) / 最大化(绿) -->
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
+                                Margin="6,0,12,0"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Button Style="{StaticResource TrafficLightButton}" Tag="#FF5F57"
+                                Content="✕" Click="HideToTray_Click"
+                                ToolTip="{DynamicResource S.Tip.Close}" />
+                        <Button Style="{StaticResource TrafficLightButton}" Tag="#FEBC2E"
+                                Content="–" Click="Minimize_Click" ToolTip="{DynamicResource S.Tip.Minimize}" />
+                        <Button Style="{StaticResource TrafficLightButton}" Tag="#28C840"
+                                Content="+" Click="MaxRestore_Click" ToolTip="{DynamicResource S.Tip.MaxRestore}" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- ==================== 主体 ==================== -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <!-- 左侧单列侧边栏：宽度由代码维护（折叠=窄条，展开=持久化宽度，分隔条可拖动） -->
+                        <ColumnDefinition x:Name="SidebarColumn" Width="150" MinWidth="0" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition x:Name="TaskColumn" Width="*" MinWidth="150" />
+                        <!-- 右侧日程分隔条 + 日程面板(默认收起,宽度=0) -->
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition x:Name="ScheduleColumn" Width="0" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- ===== 左侧单列侧边栏（自上而下：全部任务 / 分组 / 新建分组 / 主题 / 三横） ===== -->
+                    <Border x:Name="SidebarPanel" Grid.Column="0" Background="{DynamicResource SidebarBg}">
+                        <Grid Margin="4,8">
+                            <Grid.RowDefinitions>
+                                <!-- 上部(*):分组区+收集箱整体可滚动;下部各项(使用说明/导入导出/主题/收起)紧贴底部 -->
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- 上部滚动区:所有待办+普通分组(可拖排序) → 新建分组 → 已完成 → 收集箱/便签。
+                                 用浮层滚动条样式:滚动条不占布局宽度,窄条里图标与底部按钮对齐、不被遮挡。 -->
+                            <ScrollViewer Grid.Row="0" Style="{StaticResource OverlayScrollViewer}"
+                                          VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel>
+
+                            <!-- 分组列表：单击切换；拖动排序；右键操作菜单。折叠时仅显示颜色图标。
+                                 SelectedItem 用 OneWay + SelectionChanged:已完成不在本列表里,避免它被选中时列表回写 null。 -->
+                            <ListBox x:Name="GroupList" Margin="0" Style="{StaticResource FlatListBox}"
+                                     ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                     ItemsSource="{Binding SidebarGroups}"
+                                     IsSynchronizedWithCurrentItem="False"
+                                     SelectedItem="{Binding SelectedGroup, Mode=OneWay}"
+                                     SelectionChanged="GroupList_SelectionChanged"
+                                     dd:DragDrop.IsDragSource="True"
+                                     dd:DragDrop.IsDropTarget="True"
+                                     dd:DragDrop.DropHandler="{Binding}"
+                                     dd:DragDrop.UseDefaultDragAdorner="True"
+                                     dd:DragDrop.DefaultDragAdornerOpacity="0.85"
+                                     dd:DragDrop.DropTargetAdornerBrush="{DynamicResource Accent}">
+                                <ListBox.ItemContainerStyle>
+                                    <!-- “所有待办”折叠时:隐藏其下普通分组容器(所有待办自身仍显示) -->
+                                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource SidebarItemStyle}">
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsAllUncompletedGroup}" Value="False" />
+                                                    <Condition Binding="{Binding DataContext.AllUncompletedGroup.IsCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid x:Name="GroupRow"
+                                              Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+                                              ToolTip="{Binding DisplayName}"
+                                              Margin="{Binding IndentMargin}">
+                                            <Grid.ColumnDefinitions>
+                                                <!-- 折叠箭头列:仅「所有待办」显示箭头,普通分组留空占位以保持图标对齐 -->
+                                                <ColumnDefinition x:Name="GroupArrowCol" Width="14" />
+                                                <ColumnDefinition x:Name="GroupDotCol" Width="20" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- 标签重构后「所有待办」为纯视图入口,无右键操作 -->
+
+                                            <!-- 折叠箭头已移除(标签重构后「所有待办」下无子分组):始终隐藏,仅保留 14px 占位列对齐 -->
+                                            <Button x:Name="GroupArrow" Grid.Column="0" Width="14" Padding="0"
+                                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                                    VerticalAlignment="Stretch" Focusable="False"
+                                                    Visibility="Collapsed">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="Transparent">
+                                                            <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                       FontSize="10" TextAlignment="Center"
+                                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                       Foreground="{DynamicResource SecondaryText}">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="&#xE70D;" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsCollapsed}" Value="True">
+                                                                                <Setter Property="Text" Value="&#xE76C;" />
+                                                                                <Setter Property="Margin" Value="0,1,0,0" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+
+                                            <Grid x:Name="GroupIcon" Grid.Column="1"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <!-- 字形图标(无自定义图片时显示) -->
+                                                <TextBlock Text="{Binding Icon}"
+                                                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource PrimaryText}"
+                                                           Visibility="{Binding HasIconImage, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                <!-- 自定义图片图标 -->
+                                                <Image Source="{Binding IconImage, Converter={StaticResource PathToImage}}"
+                                                       Width="16" Height="16" Stretch="UniformToFill"
+                                                       Visibility="{Binding HasIconImage, Converter={StaticResource BoolToVis}}" />
+                                            </Grid>
+                                            <TextBlock Grid.Column="2" Text="{Binding DisplayName}" VerticalAlignment="Center"
+                                                       Margin="6,0,0,0" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                       Foreground="{DynamicResource PrimaryText}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <!-- 内联重命名输入框(右键“重命名”或新建分组时显示) -->
+                                            <TextBox Grid.Column="2" Margin="6,0,0,0" FontSize="12" Padding="2,1"
+                                                     Style="{StaticResource FlatTextBox}" VerticalAlignment="Center"
+                                                     Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"
+                                                     IsVisibleChanged="GroupNameEdit_IsVisibleChanged"
+                                                     LostKeyboardFocus="GroupNameEdit_LostFocus"
+                                                     KeyDown="GroupNameEdit_KeyDown" />
+                                            <TextBlock Grid.Column="3" Text="{Binding ItemCount}" Margin="4,0"
+                                                       VerticalAlignment="Center" FontSize="11"
+                                                       Foreground="{DynamicResource MutedText}"
+                                                       Visibility="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <!-- 折叠时：颜色点跨满整行并居中，与其它图标对齐。
+                                                 注意：必须把首列固定宽度 20 改成 *，否则在 39px 窄条里
+                                                 20px 列比可用内容区还宽，居中的色点会被挤到右侧并被裁掉一半。 -->
+                                            <DataTrigger Binding="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                <!-- 折叠箭头列收 0、隐藏箭头,色点跨满整行居中 -->
+                                                <Setter TargetName="GroupArrowCol" Property="Width" Value="0" />
+                                                <Setter TargetName="GroupArrow" Property="Visibility" Value="Collapsed" />
+                                                <Setter TargetName="GroupDotCol" Property="Width" Value="*" />
+                                                <Setter TargetName="GroupIcon" Property="Grid.ColumnSpan" Value="3" />
+                                                <Setter TargetName="GroupIcon" Property="HorizontalAlignment" Value="Center" />
+                                                <Setter TargetName="GroupIcon" Property="Margin" Value="0" />
+                                                <!-- 折叠侧栏(窄条)时取消层级缩进，避免图标被挤偏/裁切 -->
+                                                <Setter TargetName="GroupRow" Property="Margin" Value="0" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <!-- (新建分组已移到分组右键菜单:右键任意分组 → 新建分组,新分组进入内联重命名) -->
+
+                            <!-- 已完成:顶层独立成行(与「所有待办」对称,不缩进);点击切到已完成视图,色块绑 CompletedGroup.IsHighlighted -->
+                            <Button x:Name="CompletedRow" Margin="0,2,0,0" Height="32"
+                                    HorizontalContentAlignment="Stretch" Click="Completed_Click"
+                                    ToolTip="{Binding CompletedGroup.DisplayName}">
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{DynamicResource S.Group.ClearCompleted}"
+                                                  Command="{Binding PlacementTarget.DataContext.ClearGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext.CompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                                <Button.Style>
+                                    <!-- 自带模板:选中态=底色+左侧强调色竖条,与分组行(SidebarItemStyle)视觉一致.
+                                         色块绑 IsHighlighted(统一入口计算,便签视图下自动熄灭),展开/窄条共用. -->
+                                    <Style TargetType="Button">
+                                        <Setter Property="Cursor" Value="Hand" />
+                                        <Setter Property="Focusable" Value="False" />
+                                        <!-- 与「所有待办」(SidebarItemStyle Padding 10) 左对齐;窄条折叠态收紧回 6 保持原居中 -->
+                                        <Setter Property="Padding" Value="10,0" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Grid>
+                                                        <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
+                                                        <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                                                        <Border Padding="{TemplateBinding Padding}" Background="Transparent">
+                                                            <ContentPresenter VerticalAlignment="Center"
+                                                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                                        </Border>
+                                                        <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
+                                                                Background="{DynamicResource Accent}"
+                                                                HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" />
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="hover" Property="Opacity" Value="1" />
+                                                        </Trigger>
+                                                        <DataTrigger Binding="{Binding CompletedGroup.IsHighlighted}" Value="True">
+                                                            <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                                            <Setter TargetName="ind" Property="Opacity" Value="1" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                <Setter Property="Padding" Value="6,0" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <Grid>
+                                    <!-- 展开态:箭头占位列 + 图标 + 名称 + 计数(与「所有待办」对齐) -->
+                                    <Grid Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="14" />
+                                            <ColumnDefinition Width="20" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="{Binding CompletedGroup.Icon}"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="2" Text="{Binding CompletedGroup.DisplayName}" Margin="6,0,0,0"
+                                                   VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="3" Text="{Binding CompletedGroup.ItemCount}" Margin="4,0"
+                                                   VerticalAlignment="Center" FontSize="11"
+                                                   Foreground="{DynamicResource MutedText}" />
+                                    </Grid>
+                                    <!-- 折叠态(窄条):仅图标居中,与分组图标对齐不裁切 -->
+                                    <TextBlock Text="{Binding CompletedGroup.Icon}"
+                                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource PrimaryText}"
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}" />
+                                </Grid>
+                            </Button>
+
+                            <!-- 标签看板:顶层独立成行(在「已完成」与「四象限」之间);点击切到标签看板视图 -->
+                            <Button x:Name="TagBoardRow" Margin="0,2,0,0" Height="32"
+                                    HorizontalContentAlignment="Stretch" Click="TagBoard_Click"
+                                    ToolTip="{Binding TagBoardGroup.DisplayName}">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Cursor" Value="Hand" />
+                                        <Setter Property="Focusable" Value="False" />
+                                        <Setter Property="Padding" Value="10,0" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Grid>
+                                                        <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
+                                                        <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                                                        <Border Padding="{TemplateBinding Padding}" Background="Transparent">
+                                                            <ContentPresenter VerticalAlignment="Center"
+                                                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                                        </Border>
+                                                        <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
+                                                                Background="{DynamicResource Accent}"
+                                                                HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" />
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="hover" Property="Opacity" Value="1" />
+                                                        </Trigger>
+                                                        <DataTrigger Binding="{Binding TagBoardGroup.IsHighlighted}" Value="True">
+                                                            <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                                            <Setter TargetName="ind" Property="Opacity" Value="1" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                <Setter Property="Padding" Value="6,0" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <Grid>
+                                    <Grid Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="14" />
+                                            <ColumnDefinition Width="20" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="{Binding TagBoardGroup.Icon}"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="2" Text="{Binding TagBoardGroup.DisplayName}" Margin="6,0,0,0"
+                                                   VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="3" Text="{Binding TagBoardGroup.ItemCount}" Margin="4,0"
+                                                   VerticalAlignment="Center" FontSize="11"
+                                                   Foreground="{DynamicResource MutedText}" />
+                                    </Grid>
+                                    <TextBlock Text="{Binding TagBoardGroup.Icon}"
+                                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource PrimaryText}"
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}" />
+                                </Grid>
+                            </Button>
+
+                            <!-- 四象限:顶层独立成行(与「已完成」同级,不缩进);点击切到四象限视图,色块绑 QuadrantGroup.IsHighlighted -->
+                            <Button x:Name="QuadrantRow" Margin="0,2,0,0" Height="32"
+                                    HorizontalContentAlignment="Stretch" Click="Quadrant_Click"
+                                    ToolTip="{Binding QuadrantGroup.DisplayName}">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Cursor" Value="Hand" />
+                                        <Setter Property="Focusable" Value="False" />
+                                        <Setter Property="Padding" Value="10,0" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Grid>
+                                                        <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
+                                                        <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                                                        <Border Padding="{TemplateBinding Padding}" Background="Transparent">
+                                                            <ContentPresenter VerticalAlignment="Center"
+                                                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                                        </Border>
+                                                        <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
+                                                                Background="{DynamicResource Accent}"
+                                                                HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" />
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="hover" Property="Opacity" Value="1" />
+                                                        </Trigger>
+                                                        <DataTrigger Binding="{Binding QuadrantGroup.IsHighlighted}" Value="True">
+                                                            <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                                            <Setter TargetName="ind" Property="Opacity" Value="1" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                <Setter Property="Padding" Value="6,0" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <Grid>
+                                    <!-- 展开态:箭头占位列 + 图标 + 名称 + 计数(与「已完成」对齐) -->
+                                    <Grid Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="14" />
+                                            <ColumnDefinition Width="20" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="{Binding QuadrantGroup.Icon}"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="2" Text="{Binding QuadrantGroup.DisplayName}" Margin="6,0,0,0"
+                                                   VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="3" Text="{Binding QuadrantGroup.ItemCount}" Margin="4,0"
+                                                   VerticalAlignment="Center" FontSize="11"
+                                                   Foreground="{DynamicResource MutedText}" />
+                                    </Grid>
+                                    <!-- 折叠态(窄条):仅图标居中 -->
+                                    <TextBlock Text="{Binding QuadrantGroup.Icon}"
+                                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource PrimaryText}"
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}" />
+                                </Grid>
+                            </Button>
+
+                            <!-- ===== 收集箱(便签):可折叠便签树 ===== -->
+                            <!-- 折叠侧栏(窄条)时:收集箱整树化为可定位图标列(收集箱 + 未分组便签 + 分组及组内便签),
+                                 与待办分组一致;点击便签图标直接打开该篇,点击收集箱/分组图标进入便签视图。 -->
+                            <StackPanel Margin="0,2,0,0"
+                                        Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}">
+                                <!-- 收集箱 定位块:点击=进入便签视图。不再随 IsNotesViewOpen 高亮:
+                                     便签视图下总有一个激活便签(其图标或所在折叠分组的文件夹已显示色块),
+                                     收集箱根再高亮就成了第二个多余色块,与展开树(收集箱头不高亮)也不一致。 -->
+                                <Button Style="{StaticResource RailIconButtonStyle}"
+                                        ToolTip="{DynamicResource S.Note.Inbox}"
+                                        Command="{Binding NotesVm.OpenInboxCommand}">
+                                    <TextBlock Text="&#xEC50;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                               FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource SecondaryText}" />
+                                </Button>
+
+                                <!-- 未分组便签图标:点击=打开该便签 -->
+                                <ItemsControl ItemsSource="{Binding NotesVm.UngroupedNotes}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource RailNoteButtonStyle}"
+                                                    ToolTip="{Binding DisplayTitle}"
+                                                    Command="{Binding DataContext.NotesVm.SelectNoteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}">
+                                                <TextBlock Text="&#xE70B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                           FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource SecondaryText}" />
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- 便签分组(文件夹图标) + 组内便签(便签图标,分组折叠时隐藏) -->
+                                <ItemsControl ItemsSource="{Binding NotesVm.NoteGroups}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel>
+                                                <!-- 分组(文件夹)图标:折叠且组内含选中便签时显示选中色块+竖条(便签被折叠隐藏的兜底) -->
+                                                <Button Style="{StaticResource RailNoteButtonStyle}"
+                                                        ToolTip="{Binding Name}"
+                                                        Command="{Binding DataContext.NotesVm.OpenInboxCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                                                    <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                               FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource SecondaryText}" />
+                                                </Button>
+                                                <ItemsControl ItemsSource="{Binding Notes}"
+                                                              Visibility="{Binding IsCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Style="{StaticResource RailNoteButtonStyle}"
+                                                                    ToolTip="{Binding DisplayTitle}"
+                                                                    Command="{Binding DataContext.NotesVm.SelectNoteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}">
+                                                                <TextBlock Text="&#xE70B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                           FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                           Foreground="{DynamicResource SecondaryText}" />
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <!-- 展开侧栏时:完整收集箱树 -->
+                            <StackPanel Margin="0,12,0,0"
+                                        Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                <!-- 收集箱 头:点击折叠/展开;右键「新建便签 / 新建分组 / 折叠展开」。
+                                     根折叠把整树(含选中便签)藏起时,且处于便签视图,由收集箱头兜底显示色块 -->
+                                <Button Height="28" Padding="10,0"
+                                        HorizontalContentAlignment="Stretch"
+                                        Command="{Binding NotesVm.ToggleInboxCollapseCommand}">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding NotesVm.InboxCollapsed}" Value="True" />
+                                                        <Condition Binding="{Binding IsNotesViewOpen}" Value="True" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                    <Button.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="{DynamicResource S.Note.New}"
+                                                      Command="{Binding PlacementTarget.DataContext.NotesVm.NewNoteCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                            <MenuItem Header="{DynamicResource S.Note.NewGroup}"
+                                                      Command="{Binding PlacementTarget.DataContext.NotesVm.NewNoteGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                            <Separator />
+                                            <MenuItem Header="{DynamicResource S.Note.ToggleCollapse}"
+                                                      Command="{Binding PlacementTarget.DataContext.NotesVm.ToggleInboxCollapseCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                        </ContextMenu>
+                                    </Button.ContextMenu>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <!-- 折叠指示箭头(收起态 E76C 视觉偏上,下移 1px 居中) -->
+                                        <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="10" Width="14" TextAlignment="Center" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource SecondaryText}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="&#xE70D;" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding NotesVm.InboxCollapsed}" Value="True">
+                                                            <Setter Property="Text" Value="&#xE76C;" />
+                                                            <Setter Property="Margin" Value="0,1,0,0" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Grid.Column="1" Text="&#xEC50;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="15" Width="20" TextAlignment="Center" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource SecondaryText}" />
+                                        <TextBlock Grid.Column="2" Text="{DynamicResource S.Note.Inbox}" Margin="6,0,0,0" FontSize="12"
+                                                   FontWeight="SemiBold" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource SecondaryText}" />
+                                    </Grid>
+                                </Button>
+
+                                <!-- 收集箱内容(根折叠时整体隐藏) -->
+                                <!-- 便签选中跨多个 ListBox(未分组 + 各分组):不绑定 SelectedItem(绑定到外来值会让
+                                     Selector「卡死」,导致点了一篇后选不动另一篇);改为点选后由代码清掉其它列表的选中,
+                                     高亮统一以 Note.IsActive 为准. -->
+                                <StackPanel x:Name="InboxTree"
+                                            Visibility="{Binding NotesVm.InboxCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+
+                                    <!-- 未分组便签(收集箱根下,B 级缩进,与分组同层) -->
+                                    <ListBox Margin="16,2,0,0" Style="{StaticResource FlatListBox}"
+                                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                             ItemsSource="{Binding NotesVm.UngroupedNotes}"
+                                             SelectionChanged="InboxNotes_SelectionChanged"
+                                             ItemContainerStyle="{StaticResource NoteItemContainerStyle}"
+                                             ItemTemplate="{StaticResource NoteItemTemplate}"
+                                             dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                             dd:DragDrop.DropHandler="{Binding NotesVm.DropHandler}"
+                                             dd:DragDrop.UseDefaultDragAdorner="True"
+                                             dd:DragDrop.DefaultDragAdornerOpacity="0.85"
+                                             dd:DragDrop.DropTargetAdornerBrush="{DynamicResource Accent}" />
+
+                                    <!-- 便签分组列表 -->
+                                    <ItemsControl ItemsSource="{Binding NotesVm.NoteGroups}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <!-- 便签分组:整体 B 级缩进(与未分组便签/待办分组同层) -->
+                                                <StackPanel Margin="16,0,0,0">
+                                                    <!-- 分组头:点击折叠/展开;右键菜单。折叠且组内含选中便签时,显示选中色块(被折叠隐藏的便签兜底) -->
+                                                    <Button Height="26" Padding="10,0" Margin="0,2,0,0"
+                                                            HorizontalContentAlignment="Stretch"
+                                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            Command="{Binding DataContext.NotesVm.ToggleNoteGroupCollapseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                                                <Style.Triggers>
+                                                                    <MultiDataTrigger>
+                                                                        <MultiDataTrigger.Conditions>
+                                                                            <Condition Binding="{Binding IsCollapsed}" Value="True" />
+                                                                            <Condition Binding="{Binding HasActiveNote}" Value="True" />
+                                                                        </MultiDataTrigger.Conditions>
+                                                                        <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                                                    </MultiDataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                        <Button.ContextMenu>
+                                                            <ContextMenu>
+                                                                <MenuItem Header="{DynamicResource S.Note.New}"
+                                                                          Command="{Binding PlacementTarget.Tag.NotesVm.NewNoteInGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                                <MenuItem Header="{DynamicResource S.Note.RenameGroup}"
+                                                                          Command="{Binding PlacementTarget.Tag.NotesVm.RenameNoteGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                                <MenuItem Header="{DynamicResource S.Note.ToggleCollapse}"
+                                                                          Command="{Binding PlacementTarget.Tag.NotesVm.ToggleNoteGroupCollapseCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                                <Separator />
+                                                                <MenuItem Header="{DynamicResource S.Note.DeleteGroup}"
+                                                                          Click="NoteGroupDelete_Click" />
+                                                            </ContextMenu>
+                                                        </Button.ContextMenu>
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                       FontSize="10" Width="14" TextAlignment="Center" VerticalAlignment="Center"
+                                                                       Foreground="{DynamicResource SecondaryText}">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="&#xE70D;" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsCollapsed}" Value="True">
+                                                                                <Setter Property="Text" Value="&#xE76C;" />
+                                                                                <Setter Property="Margin" Value="0,1,0,0" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                            <TextBlock Grid.Column="1" Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                       FontSize="15" Width="20" TextAlignment="Center" VerticalAlignment="Center"
+                                                                       Foreground="{DynamicResource SecondaryText}" />
+                                                            <!-- 分组名 / 内联重命名 -->
+                                                            <TextBlock Grid.Column="2" Text="{Binding DisplayName}" Margin="6,0,0,0"
+                                                                       VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                                       Foreground="{DynamicResource PrimaryText}"
+                                                                       Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                            <TextBox Grid.Column="2" Margin="6,0,0,0" FontSize="12" Padding="2,1"
+                                                                     Style="{StaticResource FlatTextBox}" VerticalAlignment="Center"
+                                                                     Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                     Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"
+                                                                     IsVisibleChanged="NoteGroupNameEdit_IsVisibleChanged"
+                                                                     LostKeyboardFocus="NoteGroupNameEdit_LostFocus"
+                                                                     KeyDown="NoteGroupNameEdit_KeyDown" />
+                                                        </Grid>
+                                                    </Button>
+
+                                                    <!-- 分组下便签(C 级:在分组 B 级缩进基础上再进一层;分组折叠时隐藏) -->
+                                                    <ListBox Margin="16,0,0,0" Style="{StaticResource FlatListBox}"
+                                                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                             Visibility="{Binding IsCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
+                                                             ItemsSource="{Binding Notes}"
+                                                             SelectionChanged="InboxNotes_SelectionChanged"
+                                                             ItemContainerStyle="{StaticResource NoteItemContainerStyle}"
+                                                             ItemTemplate="{StaticResource NoteItemTemplate}"
+                                                             dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                                             dd:DragDrop.DropHandler="{Binding DataContext.NotesVm.DropHandler, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                             dd:DragDrop.UseDefaultDragAdorner="True"
+                                                             dd:DragDrop.DefaultDragAdornerOpacity="0.85"
+                                                             dd:DragDrop.DropTargetAdornerBrush="{DynamicResource Accent}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- + 写点什么:新建便签(置于收集箱最底部) -->
+                                    <Button Style="{StaticResource GhostButton}" Height="28" Padding="6,0" Margin="0,4,0,0"
+                                            HorizontalContentAlignment="Left" Command="{Binding NotesVm.NewNoteCommand}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="13" Width="18" TextAlignment="Center" VerticalAlignment="Center" />
+                                            <TextBlock Text="{DynamicResource S.Note.WriteSomething}" Margin="6,0,0,0"
+                                                       FontSize="12" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </StackPanel>
+
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <!-- 使用说明（展开=图标+文字左对齐，折叠=书本图标居中） -->
+                            <Button Grid.Row="1" Margin="0,2,0,0" Height="28" Padding="6,0"
+                                    Click="Help_Click" ToolTip="{DynamicResource S.Help}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE82D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Width="18"
+                                               TextAlignment="Center" VerticalAlignment="Center" />
+                                    <TextBlock Text="{DynamicResource S.Help}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- 导入导出（展开=图标+文字左对齐，折叠=图标居中），与“使用说明”同款 -->
+                            <Grid Grid.Row="2" Margin="0,2,0,0">
+                                <ToggleButton x:Name="IoToggle" Height="28" Padding="6,0" ToolTip="{DynamicResource S.ImportExport}">
+                                    <ToggleButton.Style>
+                                        <Style TargetType="ToggleButton" BasedOn="{StaticResource SidebarToggleButton}">
+                                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ToggleButton.Style>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE72D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Width="18"
+                                                   TextAlignment="Center" VerticalAlignment="Center" />
+                                        <TextBlock Text="{DynamicResource S.ImportExport}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                                   Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                    </StackPanel>
+                                </ToggleButton>
+                                <Popup IsOpen="{Binding IsChecked, ElementName=IoToggle}"
+                                       PlacementTarget="{Binding ElementName=IoToggle}"
+                                       Placement="Top" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                                    <Border Background="{DynamicResource PopupBg}" CornerRadius="10"
+                                            BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                            Padding="6" Margin="6" MinWidth="170">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                        </Border.Effect>
+                                        <StackPanel>
+                                            <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                                    Padding="10,8" Click="ExportMarkdown_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="⬆" FontSize="13" Width="18"
+                                                               TextAlignment="Center" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{DynamicResource S.Export.Md}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                                    Padding="10,8" Click="ImportMarkdown_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="⬇" FontSize="13" Width="18"
+                                                               TextAlignment="Center" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{DynamicResource S.Import.Md}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+
+                            <!-- 修改主题：点击打开独立的主题选择窗口（可拖动、不遮挡主程序、实时预览） -->
+                            <Button Grid.Row="3" x:Name="ThemeButton" Margin="0,2,0,0" Height="28" Padding="6,0"
+                                    Click="OpenThemePicker_Click" ToolTip="{DynamicResource S.ChangeTheme}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE790;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Width="18"
+                                               TextAlignment="Center" VerticalAlignment="Center" />
+                                    <TextBlock Text="{DynamicResource S.ChangeTheme}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- 收起侧边栏（展开=三横图标+文字左对齐，折叠=三横图标居中，最底部） -->
+                            <Button Grid.Row="4" Margin="0,2,0,0" Height="28" Padding="6,0"
+                                    Command="{Binding ToggleSidebarCommand}" ToolTip="{DynamicResource S.Tip.ToggleSidebar}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE700;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Width="18"
+                                               TextAlignment="Center" VerticalAlignment="Center" />
+                                    <TextBlock Text="{DynamicResource S.CollapseSidebar}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- 分隔条：拖动调整侧边栏宽度（折叠时隐藏） -->
+                    <GridSplitter x:Name="SidebarSplitter" Grid.Column="1" Width="5"
+                                  HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                                  Background="Transparent" ResizeBehavior="PreviousAndNext"
+                                  Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+
+                    <!-- ==================== 右侧：任务区（与便签视图互斥切换） ==================== -->
+                    <Grid x:Name="TaskArea" Grid.Column="2" Margin="16,16,16,16"
+                          Visibility="{Binding IsNotesViewOpen, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition x:Name="InputBarRow" Height="40" MinHeight="28" />
+                        </Grid.RowDefinitions>
+
+                        <!-- 头部：标题 + 排序（图标按钮，点击弹出选择） -->
+                        <Grid Grid.Row="0" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding CurrentTitle}" FontSize="17"
+                                       FontWeight="Bold" VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource PrimaryText}" />
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
+                                        Visibility="{Binding IsBoardSelected, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                            <Grid VerticalAlignment="Center">
+                                <ToggleButton x:Name="SortToggle" Style="{StaticResource CaptionToggleButton}"
+                                              ToolTip="{Binding SortTooltip}">
+                                    <TextBlock Text="&#xE8CB;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" />
+                                </ToggleButton>
+                                <Popup IsOpen="{Binding IsChecked, ElementName=SortToggle}"
+                                       PlacementTarget="{Binding ElementName=SortToggle}"
+                                       Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                                    <Border Background="{DynamicResource PopupBg}" CornerRadius="8"
+                                            BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                            Padding="6" Margin="6" MinWidth="150">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                        </Border.Effect>
+                                        <ItemsControl ItemsSource="{Binding SortOptions}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Style="{StaticResource GhostButton}"
+                                                            HorizontalContentAlignment="Left" Padding="10,7"
+                                                            Content="{Binding Label}" Tag="{Binding}"
+                                                            Click="SortOption_Click" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                            <!-- 日程/日历:按截止时间在日历中查看待办(天/周/月) -->
+                            <Button x:Name="ScheduleButton" Style="{StaticResource CaptionButton}"
+                                    Margin="2,0,0,0"
+                                    ToolTip="{DynamicResource S.Schedule.Tooltip}"
+                                    Click="Schedule_Click">
+                                <TextBlock Text="&#xE787;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" />
+                            </Button>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- 任务列表（支持拖拽排序 + 右键菜单 + Tab/Shift+Tab 调整缩进） -->
+                        <ListBox x:Name="TaskList" Grid.Row="1" Style="{StaticResource FlatListBox}"
+                                 Visibility="{Binding IsBoardSelected, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
+                                 ItemContainerStyle="{StaticResource TaskItemStyle}"
+                                 ItemsSource="{Binding Items}"
+                                 PreviewKeyDown="TaskList_PreviewKeyDown"
+                                 dd:DragDrop.IsDragSource="True"
+                                 dd:DragDrop.IsDropTarget="True"
+                                 dd:DragDrop.DropHandler="{Binding}"
+                                 dd:DragDrop.UseDefaultDragAdorner="True"
+                                 dd:DragDrop.DefaultDragAdornerOpacity="0.85"
+                                 dd:DragDrop.DropTargetAdornerBrush="{DynamicResource Accent}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <!-- Tag 绑定到主窗口 DataContext(=ViewModel)，供 ContextMenu 经 PlacementTarget.Tag 访问命令 -->
+                                    <Grid Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- 右键菜单：编辑(优先级+DDL) / 置顶 / 缩进 / 移动到分组 / 删除 -->
+                                        <Grid.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="{DynamicResource S.Task.Edit}" Click="EditTask_Click" />
+                                                <MenuItem Header="{DynamicResource S.Task.TogglePin}"
+                                                          Command="{Binding PlacementTarget.Tag.TogglePinCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                <Separator />
+                                                <MenuItem Header="{DynamicResource S.Task.Indent}"
+                                                          Command="{Binding PlacementTarget.Tag.IndentTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                <MenuItem Header="{DynamicResource S.Task.Outdent}"
+                                                          Command="{Binding PlacementTarget.Tag.OutdentTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                <!-- 移动到分组：子项动态绑定到普通分组（排除“已完成”） -->
+                                                <MenuItem Header="{DynamicResource S.Task.MoveToGroup}"
+                                                          ItemsSource="{Binding PlacementTarget.Tag.MoveTargetGroups, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                                    <MenuItem.ItemContainerStyle>
+                                                        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                                            <Setter Property="Header" Value="{Binding Name}" />
+                                                            <EventSetter Event="Click" Handler="MoveToGroup_Click" />
+                                                        </Style>
+                                                    </MenuItem.ItemContainerStyle>
+                                                </MenuItem>
+                                                <Separator />
+                                                <MenuItem Header="{DynamicResource S.Task.Delete}"
+                                                          Command="{Binding PlacementTarget.Tag.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                            </ContextMenu>
+                                        </Grid.ContextMenu>
+
+                                        <!-- 圆形勾选框（Col0）：默认圆环按优先级着色；开启“前置色块”时圆环转中性灰
+                                             (优先级色块改由卡片左边缘的竖条体现，见 TaskItemStyle 模板) -->
+                                        <CheckBox Grid.Column="0" Style="{StaticResource TaskCheckBox}"
+                                                  VerticalAlignment="Center" Margin="0,0,3,0"
+                                                  IsChecked="{Binding IsCompleted, Mode=TwoWay}">
+                                            <CheckBox.BorderBrush>
+                                                <MultiBinding Converter="{StaticResource PriorityRingBrush}">
+                                                    <Binding Path="Priority" />
+                                                    <Binding Path="DataContext.ShowPriorityBlock" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                </MultiBinding>
+                                            </CheckBox.BorderBrush>
+                                        </CheckBox>
+
+                                        <!-- 标题（Col1）：默认显示文本（超长截断显示前部）；单击进入编辑 -->
+                                        <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock x:Name="TitleText" Text="{Binding Title}"
+                                                           VerticalAlignment="Center" Padding="2,1"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           MouseLeftButtonUp="TaskTitle_Click"
+                                                           Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                                    <!-- 父待办(顶层)字号大、子待办(缩进)字号小，并跟随设置的基准字号 -->
+                                                    <TextBlock.FontSize>
+                                                        <MultiBinding Converter="{StaticResource IndentFontSize}">
+                                                            <Binding Path="IndentLevel" />
+                                                            <Binding Path="DataContext.FontSize" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                        </MultiBinding>
+                                                    </TextBlock.FontSize>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                                    <Setter Property="TextDecorations" Value="Strikethrough" />
+                                                                    <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+
+                                                <TextBox x:Name="TitleEdit" Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         Style="{StaticResource TaskTitleTextBox}" VerticalAlignment="Center"
+                                                         IsVisibleChanged="TitleEdit_IsVisibleChanged"
+                                                         LostKeyboardFocus="TitleEdit_LostFocus"
+                                                         KeyDown="TitleEdit_KeyDown"
+                                                         Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}">
+                                                    <TextBox.FontSize>
+                                                        <MultiBinding Converter="{StaticResource IndentFontSize}">
+                                                            <Binding Path="IndentLevel" />
+                                                            <Binding Path="DataContext.FontSize" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                        </MultiBinding>
+                                                    </TextBox.FontSize>
+                                                </TextBox>
+                                        </Grid>
+
+                                        <!-- 子任务折叠（Col2，移到标题右侧行末，父任务单行不再两行）：圆角箭头 + “子任务 (n/m)”，点击折叠/展开 -->
+                                        <Button Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                Margin="8,0,0,0" Padding="4,2" Cursor="Hand"
+                                                    Command="{Binding DataContext.ToggleCollapseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip="{DynamicResource S.Tip.CollapseArrow}"
+                                                    Visibility="{Binding HasChildren, Converter={StaticResource BoolToVis}}">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="bg" Background="Transparent" CornerRadius="6"
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock x:Name="chev" Text="&#x2304;" FontSize="12" FontWeight="Bold"
+                                                                           VerticalAlignment="Center" Margin="0,0,5,0"
+                                                                           Foreground="{DynamicResource SecondaryText}" />
+                                                                <TextBlock Text="{Binding SubtaskText}" FontSize="11"
+                                                                           VerticalAlignment="Center"
+                                                                           Foreground="{DynamicResource SecondaryText}" />
+                                                            </StackPanel>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="bg" Property="Background" Value="{DynamicResource CardHoverBg}" />
+                                                            </Trigger>
+                                                            <DataTrigger Binding="{Binding IsCollapsed}" Value="True">
+                                                                <!-- 折叠态：右角标 › -->
+                                                                <Setter TargetName="chev" Property="Text" Value="&#x203A;" />
+                                                                <Setter TargetName="chev" Property="Foreground" Value="{DynamicResource Accent}" />
+                                                            </DataTrigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                        </Button>
+
+                                        <!-- 距离 DDL 的倒计时（Col3）:胶囊徽章,底色用 CardHoverBg 柔和衬托、文字保持紧迫度配色 -->
+                                        <Border Grid.Column="3" Margin="8,0,2,0" VerticalAlignment="Center"
+                                                Background="{DynamicResource CardHoverBg}"
+                                                CornerRadius="9" Padding="8,2"
+                                                Visibility="{Binding HasDueDate, Converter={StaticResource BoolToVis}}"
+                                                ToolTip="{Binding DueDetailText}">
+                                            <TextBlock Text="{Binding DueCountdownText}" FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{Binding DueState, Converter={StaticResource DueStateToBrush}}" />
+                                        </Border>
+
+                                        <!-- 置顶图钉 + 周期提醒小铃铛（Col4） -->
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <!-- 标签 chip:有标签时显示(图标 + 名称,淡色底) -->
+                                            <Border Margin="6,0,0,0" CornerRadius="8" Padding="6,1"
+                                                    VerticalAlignment="Center"
+                                                    Background="{Binding TagColor, Converter={StaticResource HexToLightBrush}}"
+                                                    Visibility="{Binding HasTag, Converter={StaticResource BoolToVis}}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding TagIcon}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                               FontSize="10" VerticalAlignment="Center" Margin="0,0,3,0"
+                                                               Foreground="{Binding TagColor, Converter={StaticResource StringToBrush}}" />
+                                                    <TextBlock Text="{Binding TagName}" FontSize="10" VerticalAlignment="Center"
+                                                               Foreground="{Binding TagColor, Converter={StaticResource StringToBrush}}" />
+                                                </StackPanel>
+                                            </Border>
+                                            <TextBlock Text="&#xE718;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="12" Margin="6,0,0,0"
+                                                       VerticalAlignment="Center" Foreground="{DynamicResource Accent}"
+                                                       Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}"
+                                                       ToolTip="{DynamicResource S.Task.TogglePin}" />
+                                            <TextBlock Text="&#xE7ED;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="12" Margin="6,0,2,0"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource WarningText}"
+                                                       Visibility="{Binding HasReminder, Converter={StaticResource BoolToVis}}"
+                                                       ToolTip="{DynamicResource S.Tip.ReminderBell}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- ==================== 四象限面板(2×2)：按重要/紧急装桶；仅四象限视图可见 ==================== -->
+                        <!-- 同一象限内可拖动重排(不改优先级/截止日期)，跨象限无落点。 -->
+                        <Grid x:Name="QuadrantArea" Grid.Row="1"
+                              Visibility="{Binding IsQuadrantSelected, Converter={StaticResource BoolToVis}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Q1 立即处理(重要&紧急) 红 -->
+                            <Border Grid.Row="0" Grid.Column="0" Margin="0,0,4,4"
+                                    Background="{DynamicResource CardBg}" CornerRadius="10"
+                                    BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+                                <DockPanel Margin="10,8,10,10">
+                                    <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" Background="#1AEF4444">
+                                            <TextBlock Text="&#xE7BA;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="14" Foreground="#EF4444"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q1Title}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource PrimaryText}" />
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q1Desc}" FontSize="11"
+                                                       Foreground="{DynamicResource MutedText}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding QuadrantQ1.Count}" VerticalAlignment="Center"
+                                                   FontSize="13" Foreground="#EF4444" FontWeight="SemiBold" />
+                                    </Grid>
+                                    <ListBox x:Name="QuadList1" Style="{StaticResource QuadrantListBox}" ItemsSource="{Binding QuadrantQ1}"
+                                             dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                             dd:DragDrop.DropHandler="{Binding QuadDropHandler}"
+                                             dd:DragDrop.UseDefaultDragAdorner="True"
+                                             dd:DragDrop.DefaultDragAdornerOpacity="0.85" />
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Q2 计划安排(重要&不紧急) 蓝 -->
+                            <Border Grid.Row="0" Grid.Column="1" Margin="4,0,0,4"
+                                    Background="{DynamicResource CardBg}" CornerRadius="10"
+                                    BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+                                <DockPanel Margin="10,8,10,10">
+                                    <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" Background="#1A3B82F6">
+                                            <TextBlock Text="&#xE787;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="14" Foreground="#3B82F6"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q2Title}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource PrimaryText}" />
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q2Desc}" FontSize="11"
+                                                       Foreground="{DynamicResource MutedText}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding QuadrantQ2.Count}" VerticalAlignment="Center"
+                                                   FontSize="13" Foreground="#3B82F6" FontWeight="SemiBold" />
+                                    </Grid>
+                                    <ListBox x:Name="QuadList2" Style="{StaticResource QuadrantListBox}" ItemsSource="{Binding QuadrantQ2}"
+                                             dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                             dd:DragDrop.DropHandler="{Binding QuadDropHandler}"
+                                             dd:DragDrop.UseDefaultDragAdorner="True"
+                                             dd:DragDrop.DefaultDragAdornerOpacity="0.85" />
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Q3 委派他人(不重要&紧急) 琥珀 -->
+                            <Border Grid.Row="1" Grid.Column="0" Margin="0,4,4,0"
+                                    Background="{DynamicResource CardBg}" CornerRadius="10"
+                                    BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+                                <DockPanel Margin="10,8,10,10">
+                                    <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" Background="#1AF59E0B">
+                                            <TextBlock Text="&#xE716;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="14" Foreground="#F59E0B"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q3Title}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource PrimaryText}" />
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q3Desc}" FontSize="11"
+                                                       Foreground="{DynamicResource MutedText}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding QuadrantQ3.Count}" VerticalAlignment="Center"
+                                                   FontSize="13" Foreground="#F59E0B" FontWeight="SemiBold" />
+                                    </Grid>
+                                    <ListBox x:Name="QuadList3" Style="{StaticResource QuadrantListBox}" ItemsSource="{Binding QuadrantQ3}"
+                                             dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                             dd:DragDrop.DropHandler="{Binding QuadDropHandler}"
+                                             dd:DragDrop.UseDefaultDragAdorner="True"
+                                             dd:DragDrop.DefaultDragAdornerOpacity="0.85" />
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Q4 可删除(不重要&不紧急) 灰 -->
+                            <Border Grid.Row="1" Grid.Column="1" Margin="4,4,0,0"
+                                    Background="{DynamicResource CardBg}" CornerRadius="10"
+                                    BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+                                <DockPanel Margin="10,8,10,10">
+                                    <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" Background="#1A9CA3AF">
+                                            <TextBlock Text="&#xE74D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="14" Foreground="#9CA3AF"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q4Title}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource PrimaryText}" />
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q4Desc}" FontSize="11"
+                                                       Foreground="{DynamicResource MutedText}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding QuadrantQ4.Count}" VerticalAlignment="Center"
+                                                   FontSize="13" Foreground="#9CA3AF" FontWeight="SemiBold" />
+                                    </Grid>
+                                    <ListBox x:Name="QuadList4" Style="{StaticResource QuadrantListBox}" ItemsSource="{Binding QuadrantQ4}"
+                                             dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                             dd:DragDrop.DropHandler="{Binding QuadDropHandler}"
+                                             dd:DragDrop.UseDefaultDragAdorner="True"
+                                             dd:DragDrop.DefaultDragAdornerOpacity="0.85" />
+                                </DockPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- ==================== 标签看板：每标签一容器(一行两个,高随内容);仅标签看板视图可见 ==================== -->
+                        <ScrollViewer x:Name="TagBoardArea" Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled" Padding="0,0,4,0"
+                                      Visibility="{Binding IsTagBoardSelected, Converter={StaticResource BoolToVis}}">
+                            <ItemsControl x:Name="TagBoardItems" ItemsSource="{Binding TagColumns}"
+                                          MouseMove="TagBoardItems_MouseMove"
+                                          MouseLeftButtonUp="TagBoardItems_MouseUp"
+                                          LostMouseCapture="TagBoardItems_LostCapture">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <!-- 瀑布流:容器定宽(默认窗宽正好两列),每个容器落到当前最矮一列、纵向贴齐 -->
+                                        <v:MasonryPanel ColumnWidth="220" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <!-- 标签容器:复用四象限容器外观。Top 对齐=高度只随自身内容(不被同行更高容器拉伸);
+                                             按住表头/容器空白可整体拖动重排(卡片/输入框/按钮处按下不触发,见 TagColumn_MouseDown) -->
+                                        <Border Margin="0,0,8,8" Background="{DynamicResource CardBg}" CornerRadius="10"
+                                                BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                                VerticalAlignment="Top"
+                                                MouseLeftButtonDown="TagColumn_MouseDown">
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="{DynamicResource S.Tag.Rename}" Click="TagRename_Click"
+                                                              Visibility="{Binding IsUntagged, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                    <MenuItem Header="{DynamicResource S.Tag.ChangeIcon}" Click="TagChangeIcon_Click"
+                                                              Visibility="{Binding IsUntagged, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                    <Separator Visibility="{Binding IsUntagged, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                    <MenuItem Header="{DynamicResource S.Tag.Delete}" Click="TagDelete_Click"
+                                                              Visibility="{Binding IsUntagged, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
+                                            <DockPanel Margin="10,8,10,10">
+                                                <!-- 表头:图标徽标 + 名称(可内联重命名) + 计数 -->
+                                                <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6"
+                                                            Background="{Binding Color, Converter={StaticResource HexToLightBrush}}">
+                                                        <Grid>
+                                                            <TextBlock Text="{Binding Icon}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                       FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                       Foreground="{Binding Color, Converter={StaticResource StringToBrush}}"
+                                                                       Visibility="{Binding HasIconImage, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                            <Image Source="{Binding IconImage, Converter={StaticResource PathToImage}}"
+                                                                   Width="18" Height="18"
+                                                                   Visibility="{Binding HasIconImage, Converter={StaticResource BoolToVis}}" />
+                                                        </Grid>
+                                                    </Border>
+                                                    <Grid Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                        <!-- 「无标签」列 Tag=null,两个 Visibility 绑定都会解析失败:
+                                                             必须用 FallbackValue 显式回退(标题显示/编辑框隐藏),
+                                                             否则编辑框按默认值 Visible 错误显示并盖住标题 -->
+                                                        <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{DynamicResource PrimaryText}"
+                                                                   Visibility="{Binding Tag.IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert, FallbackValue=Visible}" />
+                                                        <TextBox DataContext="{Binding Tag}" Style="{StaticResource FlatTextBox}"
+                                                                 Padding="2,1" FontSize="13"
+                                                                 Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}"
+                                                                 IsVisibleChanged="GroupNameEdit_IsVisibleChanged"
+                                                                 LostKeyboardFocus="GroupNameEdit_LostFocus"
+                                                                 KeyDown="GroupNameEdit_KeyDown" />
+                                                    </Grid>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Items.Count}" VerticalAlignment="Center"
+                                                               FontSize="13" FontWeight="SemiBold"
+                                                               Foreground="{Binding Color, Converter={StaticResource StringToBrush}}" />
+                                                </Grid>
+
+                                                <!-- 容器内「+ 添加」输入(回车=以本标签建任务) -->
+                                                <Grid DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                                                    <TextBox Style="{StaticResource FlatTextBox}" Padding="6,3" FontSize="12"
+                                                             Text="{Binding NewText, UpdateSourceTrigger=PropertyChanged}">
+                                                        <TextBox.InputBindings>
+                                                            <KeyBinding Key="Enter" Command="{Binding AddCommand}" />
+                                                        </TextBox.InputBindings>
+                                                    </TextBox>
+                                                    <TextBlock Text="{DynamicResource S.Tag.AddPlaceholder}" Margin="8,0,0,0"
+                                                               VerticalAlignment="Center" IsHitTestVisible="False" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}"
+                                                               Visibility="{Binding NewText, Converter={StaticResource EmptyToVis}}" />
+                                                </Grid>
+
+                                                <!-- 任务列表(高随内容,不内部滚动);跨容器拖动改标签 -->
+                                                <!-- 容器按内容撑高(外层 TagBoardArea 统一滚动):必须关掉项滚动+虚拟化,
+                                                     否则虚拟化 ListBox 在 WrapPanel 给的"无限高度"下无法解算视口→无限重排卡死 -->
+                                                <ListBox Style="{StaticResource QuadrantListBox}" ItemsSource="{Binding Items}"
+                                                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                         ScrollViewer.CanContentScroll="False"
+                                                         VirtualizingPanel.IsVirtualizing="False"
+                                                         dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                                         dd:DragDrop.DropHandler="{Binding DataContext.TagDropHandler, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                         dd:DragDrop.UseDefaultDragAdorner="True"
+                                                         dd:DragDrop.DefaultDragAdornerOpacity="0.85" />
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <!-- 输入任务文本后弹出：优先级（3 个色块）+ 截止时间按钮 + 周期提醒按钮 + 父待办 -->
+                        <Border Grid.Row="2" Margin="0,10,0,0" Padding="10,8"
+                                Background="{DynamicResource CardBg}" CornerRadius="8"
+                                BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                Visibility="{Binding NewTaskTitle, Converter={StaticResource EmptyToVis}, ConverterParameter=Invert}">
+                            <StackPanel>
+                                <!-- 优先级:3 个色块，点击切换，被选中的有色描边 -->
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource S.Label.Priority}" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{DynamicResource SecondaryText}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <!-- 低 -->
+                                        <Button Padding="14,4" Margin="0,0,6,0" FontSize="12" Cursor="Hand"
+                                                Click="PriorityChip_Click" Tag="Low">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="b" CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                                            Background="#1A10B981" BorderBrush="Transparent" BorderThickness="1.5">
+                                                        <TextBlock Text="{DynamicResource S.Priority.Low}" Foreground="#10B981" FontWeight="SemiBold" />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <DataTrigger Binding="{Binding DataContext.NewTaskPriority, RelativeSource={RelativeSource AncestorType=Window}}" Value="Low">
+                                                            <Setter TargetName="b" Property="BorderBrush" Value="#10B981" />
+                                                            <Setter TargetName="b" Property="Background" Value="#3310B981" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                        <!-- 中 -->
+                                        <Button Padding="14,4" Margin="0,0,6,0" FontSize="12" Cursor="Hand"
+                                                Click="PriorityChip_Click" Tag="Medium">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="b" CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                                            Background="#1AF59E0B" BorderBrush="Transparent" BorderThickness="1.5">
+                                                        <TextBlock Text="{DynamicResource S.Priority.Medium}" Foreground="#F59E0B" FontWeight="SemiBold" />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <DataTrigger Binding="{Binding DataContext.NewTaskPriority, RelativeSource={RelativeSource AncestorType=Window}}" Value="Medium">
+                                                            <Setter TargetName="b" Property="BorderBrush" Value="#F59E0B" />
+                                                            <Setter TargetName="b" Property="Background" Value="#33F59E0B" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                        <!-- 高 -->
+                                        <Button Padding="14,4" Margin="0,0,6,0" FontSize="12" Cursor="Hand"
+                                                Click="PriorityChip_Click" Tag="High">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="b" CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                                            Background="#1AEF4444" BorderBrush="Transparent" BorderThickness="1.5">
+                                                        <TextBlock Text="{DynamicResource S.Priority.High}" Foreground="#EF4444" FontWeight="SemiBold" />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <DataTrigger Binding="{Binding DataContext.NewTaskPriority, RelativeSource={RelativeSource AncestorType=Window}}" Value="High">
+                                                            <Setter TargetName="b" Property="BorderBrush" Value="#EF4444" />
+                                                            <Setter TargetName="b" Property="Background" Value="#33EF4444" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- 截止时间按钮 + 弹出选择 -->
+                                <Grid Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource S.Label.DueTime}" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{DynamicResource SecondaryText}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ToggleButton x:Name="DueTimeToggle" Padding="10,4" FontSize="12" MinWidth="120"
+                                                      HorizontalContentAlignment="Left"
+                                                      Style="{StaticResource SidebarToggleButton}"
+                                                      Background="{DynamicResource InputBg}"
+                                                      Content="{Binding NewTaskDueButtonText}" />
+                                        <Button Content="{DynamicResource S.Clear}" Style="{StaticResource GhostButton}"
+                                                Padding="8,3" Margin="6,0,0,0" FontSize="12"
+                                                Command="{Binding ClearNewTaskDueCommand}"
+                                                Visibility="{Binding HasNewTaskDue, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+
+                                    <Popup IsOpen="{Binding IsChecked, ElementName=DueTimeToggle}"
+                                           PlacementTarget="{Binding ElementName=DueTimeToggle}"
+                                           Placement="Top" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                                        <Border Background="{DynamicResource PopupBg}" CornerRadius="10"
+                                                BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                                Padding="10" Margin="6" MinWidth="260">
+                                            <Border.Effect>
+                                                <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                            </Border.Effect>
+                                            <StackPanel>
+                                                <!-- 分钟 -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="{DynamicResource S.Unit.Minute}" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="1" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="10" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="10" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="30" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="30" />
+                                                </StackPanel>
+                                                <!-- 小时 -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="{DynamicResource S.Unit.Hour}" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="60" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="2" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="120" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="5" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="300" />
+                                                </StackPanel>
+                                                <!-- 天 -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="{DynamicResource S.Unit.Day}" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="1440" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="2" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="2880" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="5" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="7200" />
+                                                </StackPanel>
+                                                <!-- 周 -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                    <TextBlock Text="{DynamicResource S.Unit.Week}" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="10080" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="2" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="20160" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="4" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="40320" />
+                                                </StackPanel>
+                                                <!-- 自定义时间 -->
+                                                <Border Background="{DynamicResource Divider}" Height="1" Margin="0,0,0,6" />
+                                                <WrapPanel>
+                                                    <TextBlock Text="{DynamicResource S.Custom}" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <DatePicker Width="112" Margin="0,0,4,4" VerticalContentAlignment="Center"
+                                                                SelectedDate="{Binding NewTaskCustomDate, Mode=TwoWay}" />
+                                                    <ComboBox Width="46" Margin="0,0,0,4" VerticalAlignment="Center"
+                                                              ItemsSource="{Binding Hours}"
+                                                              SelectedItem="{Binding NewTaskCustomHour, Mode=TwoWay}" />
+                                                    <TextBlock Text=":" VerticalAlignment="Center" Margin="3,0"
+                                                               Foreground="{DynamicResource PrimaryText}" />
+                                                    <ComboBox Width="46" Margin="0,0,4,4" VerticalAlignment="Center"
+                                                              ItemsSource="{Binding Minutes}"
+                                                              SelectedItem="{Binding NewTaskCustomMinute, Mode=TwoWay}" />
+                                                    <!-- (选了日期/时/分即自动设定，无需"设定"按钮) -->
+                                                </WrapPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </Grid>
+
+                                <!-- 周期提醒按钮 + 弹出选择 -->
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource S.Label.Reminder}" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{DynamicResource SecondaryText}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ToggleButton x:Name="ReminderToggle" Padding="10,4" FontSize="12" MinWidth="120"
+                                                      HorizontalContentAlignment="Left"
+                                                      Style="{StaticResource SidebarToggleButton}"
+                                                      Background="{DynamicResource InputBg}"
+                                                      Content="{Binding NewTaskReminderButtonText}" />
+                                        <Button Content="{DynamicResource S.Clear}" Style="{StaticResource GhostButton}"
+                                                Padding="8,3" Margin="6,0,0,0" FontSize="12"
+                                                Command="{Binding ClearNewTaskReminderCommand}"
+                                                Visibility="{Binding NewTaskReminderEnabled, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+
+                                    <Popup IsOpen="{Binding IsChecked, ElementName=ReminderToggle}"
+                                           PlacementTarget="{Binding ElementName=ReminderToggle}"
+                                           Placement="Top" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                                        <Border Background="{DynamicResource PopupBg}" CornerRadius="10"
+                                                BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                                Padding="10" Margin="6" MinWidth="260">
+                                            <Border.Effect>
+                                                <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                            </Border.Effect>
+                                            <StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="{DynamicResource S.Unit.Minute}" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="1" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="10" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="10" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="30" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="30" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="{DynamicResource S.Unit.Hour}" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="60" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="2" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="120" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="5" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="300" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="{DynamicResource S.Unit.Day}" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="1440" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="2" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="2880" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="5" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="7200" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                    <TextBlock Text="{DynamicResource S.Unit.Week}" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="10080" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="2" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="20160" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="4" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="40320" />
+                                                </StackPanel>
+                                                <Border Background="{DynamicResource Divider}" Height="1" Margin="0,0,0,6" />
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{DynamicResource S.Custom}" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <TextBox Width="60" Style="{StaticResource FlatTextBox}" Padding="6,3" FontSize="12"
+                                                             Text="{Binding NewTaskReminderCustomValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <ComboBox Width="62" Margin="6,0,0,0" VerticalAlignment="Center"
+                                                              ItemsSource="{Binding ReminderUnits}"
+                                                              DisplayMemberPath="Label"
+                                                              SelectedValuePath="Minutes"
+                                                              SelectedValue="{Binding NewTaskReminderCustomUnitMinutes, Mode=TwoWay}" />
+                                                    <!-- (输入数值/选单位即自动设为提醒，无需"设为提醒"按钮) -->
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </Grid>
+
+                                <!-- 标签选择(默认无标签;可选已有标签 / ❌删除 / + 新建) -->
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource S.Tag.Label}" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{DynamicResource SecondaryText}" />
+                                    <Grid Grid.Column="1" HorizontalAlignment="Left">
+                                        <Button x:Name="NewTaskTagButton" Click="OpenTagPicker_Click"
+                                                Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
+                                                HorizontalContentAlignment="Left" Padding="8,4" MinWidth="130">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding NewTaskTagDisplay}" FontSize="12" VerticalAlignment="Center" />
+                                                <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                           FontSize="10" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource MutedText}" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Popup x:Name="NewTaskTagPopup" PlacementTarget="{Binding ElementName=NewTaskTagButton}"
+                                               Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                                            <Border Background="{DynamicResource PopupBg}" CornerRadius="8"
+                                                    BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                                    Padding="6" Margin="6" MinWidth="200">
+                                                <Border.Effect>
+                                                    <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                                </Border.Effect>
+                                                <StackPanel>
+                                                    <Button Content="{DynamicResource S.Tag.Untagged}" Click="TagPickNone_Click"
+                                                            Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Padding="8,5" FontSize="12" />
+                                                    <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+                                                        <ItemsControl ItemsSource="{Binding TagOptions}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="*" />
+                                                                            <ColumnDefinition Width="Auto" />
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <Button Grid.Column="0" Tag="{Binding}" Click="TagPick_Click"
+                                                                                Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Padding="8,5">
+                                                                            <StackPanel Orientation="Horizontal">
+                                                                                <TextBlock Text="{Binding Icon}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                                           FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                                                           Foreground="{Binding Color, Converter={StaticResource StringToBrush}}" />
+                                                                                <TextBlock Text="{Binding Name}" FontSize="12" VerticalAlignment="Center" />
+                                                                            </StackPanel>
+                                                                        </Button>
+                                                                        <Button Grid.Column="1" Tag="{Binding}" Click="TagDeleteFromPicker_Click"
+                                                                                Style="{StaticResource GhostButton}" Padding="7,3"
+                                                                                ToolTip="{DynamicResource S.Tag.Delete}">
+                                                                            <TextBlock Text="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                                       FontSize="11" Foreground="{DynamicResource MutedText}" />
+                                                                        </Button>
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </ScrollViewer>
+                                                    <Border Background="{DynamicResource Divider}" Height="1" Margin="0,4" />
+                                                    <!-- 新建标签:默认图标(可点击修改) + 输入名称 + 新建 -->
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <Button x:Name="NewTagIconButton" Grid.Column="0" Click="NewTagPickIcon_Click"
+                                                                Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
+                                                                Padding="7,3" Margin="0,0,4,0" ToolTip="{DynamicResource S.Tag.ChangeIcon}">
+                                                            <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                       FontSize="13" Foreground="{DynamicResource PrimaryText}" />
+                                                        </Button>
+                                                        <TextBox x:Name="NewTagNameBox" Grid.Column="1" Style="{StaticResource FlatTextBox}"
+                                                                 Padding="6,3" FontSize="12" KeyDown="NewTagNameBox_KeyDown"
+                                                                 TextChanged="NewTagNameBox_TextChanged" />
+                                                        <Button Grid.Column="2" Content="{DynamicResource S.Tag.New}" Click="TagCreate_Click"
+                                                                Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
+                                                                Margin="4,0,0,0" Padding="8,3" FontSize="12" />
+                                                    </Grid>
+                                                </StackPanel>
+                                            </Border>
+                                        </Popup>
+                                    </Grid>
+                                </Grid>
+
+                                <!-- 父待办选择（创建子待办） -->
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource S.Label.Parent}" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{DynamicResource SecondaryText}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ComboBox MinWidth="170" VerticalAlignment="Center" FontSize="12"
+                                                  ItemsSource="{Binding ParentCandidates}"
+                                                  SelectedValue="{Binding NewTaskParentId, Mode=TwoWay}"
+                                                  SelectedValuePath="Id"
+                                                  DisplayMemberPath="Title"
+                                                  ToolTip="{DynamicResource S.Tip.Parent}">
+                                            <ComboBox.ItemContainerStyle>
+                                                <Style TargetType="ComboBoxItem">
+                                                    <Setter Property="Padding" Value="8,4" />
+                                                </Style>
+                                            </ComboBox.ItemContainerStyle>
+                                        </ComboBox>
+                                        <Button Content="{DynamicResource S.Clear}" Style="{StaticResource GhostButton}"
+                                                Padding="8,3" Margin="6,0,0,0" FontSize="12"
+                                                Command="{Binding ClearNewTaskParentCommand}"
+                                                Visibility="{Binding HasNewTaskParent, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 输入栏顶部:可上下拖动的细分隔条，松开后记忆高度 -->
+                        <GridSplitter x:Name="InputBarSplitter" Grid.Row="3" Height="5"
+                                      HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
+                                      Background="Transparent" ResizeBehavior="PreviousAndNext"
+                                      ResizeDirection="Rows" Cursor="SizeNS" Margin="0,4,0,0"
+                                      Visibility="{Binding IsTagBoardSelected, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+
+                        <!-- 添加任务输入栏（底部）;四象限可新增(落为无标签);标签看板隐藏(各容器内自带「+ 添加」) -->
+                        <Border Grid.Row="4" Margin="0,2,0,0"
+                                Visibility="{Binding IsTagBoardSelected, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Grid Grid.Column="0">
+                                    <!-- 回车直接提交;长文本自动换行；高度由 InputBarRow 控制 -->
+                                    <TextBox x:Name="NewTaskBox" Style="{StaticResource FlatTextBox}"
+                                             Padding="6,4" VerticalContentAlignment="Top"
+                                             TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto"
+                                             Text="{Binding NewTaskTitle, UpdateSourceTrigger=PropertyChanged}">
+                                        <TextBox.InputBindings>
+                                            <KeyBinding Key="Enter" Command="{Binding AddTaskCommand}" />
+                                        </TextBox.InputBindings>
+                                    </TextBox>
+                                    <TextBlock Text="{DynamicResource S.Input.Placeholder}" Margin="8,0,0,0"
+                                               VerticalAlignment="Center" IsHitTestVisible="False"
+                                               TextAlignment="Left" HorizontalAlignment="Left">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
+                                                <!-- 默认隐藏；仅当输入为空、且文本框未获得焦点(未点击进入)时才显示提示，单击进入即移除 -->
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding NewTaskTitle}" Value="" />
+                                                            <Condition Binding="{Binding IsKeyboardFocusWithin, ElementName=NewTaskBox}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+
+                                <!-- 语音输入：调起 Windows 系统语音输入(Win+H)，识别文字直接进入输入框 -->
+                                <Button Grid.Column="1" Style="{StaticResource GhostButton}"
+                                        Margin="8,0,0,0" Padding="10,0"
+                                        VerticalAlignment="Stretch"
+                                        Background="{DynamicResource InputBg}"
+                                        ToolTip="{DynamicResource S.Tip.Voice}"
+                                        Click="VoiceInput_Click">
+                                    <TextBlock Text="&#xE720;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15" />
+                                </Button>
+
+                                <Button Grid.Column="2" Style="{StaticResource AccentButton}" Content="{DynamicResource S.Add}"
+                                        Margin="8,0,0,0" VerticalAlignment="Stretch" Padding="10,0" MinWidth="56"
+                                        Command="{Binding AddTaskCommand}" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <!-- ==================== 便签视图(v1.2.0):与任务区互斥占据中央区域 ==================== -->
+                    <!-- 注意:NotesView 的 DataContext 在 Init 后是 NotesViewModel,必须显式绑窗口 DataContext 才能读到 IsNotesViewOpen -->
+                    <v:NotesView x:Name="NotesPanel" Grid.Column="2" Margin="16,16,16,16"
+                                 Visibility="{Binding DataContext.IsNotesViewOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}" />
+
+                    <!-- 日程分隔条:拖动调整中间任务区与右侧日程的宽度(收起时隐藏) -->
+                    <GridSplitter x:Name="ScheduleSplitter" Grid.Column="3" Width="5"
+                                  HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                                  Background="Transparent" ResizeBehavior="PreviousAndNext"
+                                  Visibility="Collapsed" />
+
+                    <!-- ==================== 右侧:日程面板(嵌入,可拖宽) ==================== -->
+                    <Border x:Name="SchedulePanel" Grid.Column="4" Visibility="Collapsed"
+                            Background="{DynamicResource SidebarBg}"
+                            BorderBrush="{DynamicResource Divider}" BorderThickness="1,0,0,0">
+                        <v:CalendarView x:Name="ScheduleView" />
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <!-- 完成庆祝：烟花粒子覆盖层（不拦截鼠标，浮于全部内容之上） -->
+            <Canvas x:Name="FxOverlay" IsHitTestVisible="False" ClipToBounds="True" />
+
+            <!-- 换肤交叉淡变：切主题前的旧主题截图盖在最上层，换肤后淡出（不拦截鼠标） -->
+            <Image x:Name="ThemeFadeOverlay" IsHitTestVisible="False" Stretch="Fill"
+                   Visibility="Collapsed" />
+        </Grid>
+    </Border>
+</Window>

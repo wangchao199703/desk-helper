@@ -1,0 +1,1333 @@
+@import "tailwindcss";
+
+/* ============================================================
+   主题(对齐 todo-flow):light = :root 基线,.dark/.glass/.warm/.lumina
+   为根节点 class,system 由 JS 解析为明/暗。色值取自 todo-flow index.css。
+   ============================================================ */
+:root {
+  /* Light —— 柔和薰衣草白底 + 紫色主色 + 深靛蓝侧栏 */
+  --window-bg: hsl(240 20% 97%);
+  --titlebar-bg: hsl(240 20% 97%);
+  --content-bg: hsl(240 20% 97%);
+  --card-bg: hsl(0 0% 100%);
+  --card-hover-bg: hsl(220 14% 94%);
+  --input-bg: hsl(220 14% 92%);
+  --primary-text: hsl(220 30% 12%);
+  --secondary-text: hsl(220 8% 45%);
+  --muted-text: hsl(220 8% 60%);
+  --accent: hsl(245 82% 68%);
+  --accent-text: hsl(0 0% 100%);
+  --divider: hsl(220 14% 90%);
+  --selected-item-bg: hsl(245 82% 68% / 0.10);
+  --overdue-text: hsl(0 70% 50%);
+  --warning-text: #d9820b;
+  --success-text: #16a34a;
+  --popup-bg: hsl(0 0% 100%);
+
+  /* 侧栏独立配色(浅色系 = 白色侧栏) */
+  --sidebar-bg: hsl(0 0% 100%);
+  --sidebar-fg: hsl(220 10% 40%);
+  --sidebar-fg-strong: hsl(220 30% 12%);
+  --sidebar-muted: hsl(220 8% 62%);
+  --sidebar-hover-bg: hsl(220 14% 94%);
+  --sidebar-selected-bg: hsl(245 82% 68% / 0.12);
+  --sidebar-selected-fg: hsl(245 82% 52%);
+  --sidebar-border: hsl(220 14% 90%);
+}
+
+.dark {
+  /* Dark —— 深海军蓝 */
+  --window-bg: hsl(230 20% 8%);
+  --titlebar-bg: hsl(230 20% 8%);
+  --content-bg: hsl(230 20% 8%);
+  --card-bg: hsl(230 18% 13%);
+  --card-hover-bg: hsl(230 15% 18%);
+  --input-bg: hsl(230 15% 20%);
+  --primary-text: hsl(220 20% 94%);
+  --secondary-text: hsl(220 12% 60%);
+  --muted-text: hsl(220 12% 45%);
+  --accent: hsl(245 82% 70%);
+  --accent-text: hsl(0 0% 100%);
+  --divider: hsl(230 15% 18%);
+  --selected-item-bg: hsl(245 82% 68% / 0.14);
+  --overdue-text: hsl(0 65% 60%);
+  --warning-text: #f0a741;
+  --success-text: #4ade80;
+  --popup-bg: hsl(230 18% 15%);
+
+  --sidebar-bg: hsl(230 25% 10%);
+  --sidebar-fg: hsl(235 8% 76%);
+  --sidebar-fg-strong: hsl(0 0% 100%);
+  --sidebar-muted: hsl(235 8% 52%);
+  --sidebar-hover-bg: hsl(0 0% 100% / 0.06);
+  --sidebar-selected-bg: hsl(245 82% 68% / 0.15);
+  --sidebar-selected-fg: hsl(0 0% 100%);
+  --sidebar-border: hsl(0 0% 100% / 0.06);
+}
+
+.glassy {
+  /* 玻璃拟态家族共用面板体系:深色渐变底(ThemeBackdrop)+ 白色半透明玻璃面板;
+     各变体(.glass/.glass-ocean/...)只覆盖强调色 */
+  --window-bg: transparent;
+  --titlebar-bg: rgba(10, 10, 30, 0.55);
+  --content-bg: transparent;
+  --card-bg: rgba(255, 255, 255, 0.04);
+  --card-hover-bg: rgba(255, 255, 255, 0.08);
+  --input-bg: rgba(255, 255, 255, 0.06);
+  --primary-text: hsl(210 40% 98%);
+  --secondary-text: hsl(215 20% 65%);
+  --muted-text: hsl(215 20% 52%);
+  --divider: hsl(0 0% 100% / 0.07);
+  --overdue-text: hsl(0 70% 62%);
+  --warning-text: #f0a741;
+  --success-text: #4ade80;
+  --popup-bg: rgba(26, 26, 46, 0.92);
+  --accent-text: hsl(0 0% 100%);
+
+  --sidebar-bg: rgba(10, 10, 30, 0.6);
+  --sidebar-fg: hsl(240 6% 78%);
+  --sidebar-fg-strong: hsl(0 0% 100%);
+  --sidebar-muted: hsl(240 6% 56%);
+  --sidebar-hover-bg: hsl(0 0% 100% / 0.06);
+  --sidebar-selected-fg: hsl(0 0% 100%);
+  --sidebar-border: hsl(0 0% 100% / 0.06);
+}
+
+.glass {
+  /* Glass·紫罗兰(原版) */
+  --accent: hsl(244 88% 75%);
+  --selected-item-bg: hsl(244 88% 71% / 0.15);
+  --sidebar-selected-bg: hsl(244 88% 71% / 0.15);
+}
+
+.glass-ocean {
+  /* Ocean·蓝青 */
+  --accent: hsl(192 85% 62%);
+  --selected-item-bg: hsl(192 85% 58% / 0.16);
+  --sidebar-selected-bg: hsl(192 85% 58% / 0.16);
+  --titlebar-bg: rgba(8, 18, 28, 0.55);
+  --sidebar-bg: rgba(8, 18, 28, 0.6);
+  --popup-bg: rgba(16, 34, 44, 0.92);
+}
+
+.glass-forest {
+  /* Forest·苔绿 */
+  --accent: hsl(158 64% 55%);
+  --selected-item-bg: hsl(158 64% 50% / 0.16);
+  --sidebar-selected-bg: hsl(158 64% 50% / 0.16);
+  --titlebar-bg: rgba(8, 24, 16, 0.55);
+  --sidebar-bg: rgba(8, 24, 16, 0.6);
+  --popup-bg: rgba(15, 38, 28, 0.92);
+}
+
+.glass-sunset {
+  /* Sunset·落日橙红 */
+  --accent: hsl(11 90% 66%);
+  --selected-item-bg: hsl(11 90% 62% / 0.16);
+  --sidebar-selected-bg: hsl(11 90% 62% / 0.16);
+  --titlebar-bg: rgba(30, 12, 24, 0.55);
+  --sidebar-bg: rgba(30, 12, 24, 0.6);
+  --popup-bg: rgba(46, 22, 36, 0.92);
+}
+
+.glass-light {
+  /* Frost·浅色玻璃:明亮渐变底 + 白磨砂面板 + 深色文字 */
+  --titlebar-bg: rgba(255, 255, 255, 0.55);
+  --card-bg: rgba(255, 255, 255, 0.5);
+  --card-hover-bg: rgba(255, 255, 255, 0.68);
+  --input-bg: rgba(255, 255, 255, 0.55);
+  --primary-text: hsl(222 30% 16%);
+  --secondary-text: hsl(222 15% 40%);
+  --muted-text: hsl(222 12% 55%);
+  --divider: hsl(230 30% 20% / 0.1);
+  --accent: hsl(246 85% 62%);
+  --selected-item-bg: hsl(246 85% 62% / 0.13);
+  --overdue-text: #d6336c;
+  --warning-text: #c2730a;
+  --success-text: #2f9e44;
+  --popup-bg: rgba(255, 255, 255, 0.92);
+  --sidebar-bg: rgba(255, 255, 255, 0.5);
+  --sidebar-fg: hsl(222 15% 38%);
+  --sidebar-fg-strong: hsl(222 30% 16%);
+  --sidebar-muted: hsl(222 12% 56%);
+  --sidebar-hover-bg: hsl(230 30% 20% / 0.06);
+  --sidebar-selected-bg: hsl(246 85% 62% / 0.13);
+  --sidebar-selected-fg: hsl(246 80% 50%);
+  --sidebar-border: hsl(230 30% 20% / 0.08);
+}
+
+.glass-dark {
+  /* Noir·中性深黑玻璃:近黑渐变底 + 银灰强调 */
+  --titlebar-bg: rgba(0, 0, 0, 0.45);
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-hover-bg: rgba(255, 255, 255, 0.09);
+  --input-bg: rgba(255, 255, 255, 0.07);
+  --primary-text: hsl(0 0% 96%);
+  --secondary-text: hsl(220 6% 68%);
+  --muted-text: hsl(220 6% 52%);
+  --divider: hsl(0 0% 100% / 0.08);
+  --accent: hsl(220 12% 78%);
+  --accent-text: hsl(220 20% 12%);
+  --selected-item-bg: hsl(0 0% 100% / 0.12);
+  --popup-bg: rgba(18, 18, 20, 0.92);
+  --sidebar-bg: rgba(0, 0, 0, 0.5);
+  --sidebar-fg: hsl(220 6% 72%);
+  --sidebar-fg-strong: hsl(0 0% 98%);
+  --sidebar-muted: hsl(220 6% 50%);
+  --sidebar-selected-bg: hsl(0 0% 100% / 0.13);
+  --sidebar-selected-fg: hsl(0 0% 100%);
+}
+
+/* ===== Gemini 设计的 4 套主题(键名/缺失 token 已对齐本项目规范) ===== */
+/* Classic —— 纯白克莱因蓝,干净明快 */
+.light-classic {
+  --window-bg: #f3f4f6;
+  --titlebar-bg: #f9fafb;
+  --content-bg: #ffffff;
+  --card-bg: #ffffff;
+  --card-hover-bg: #f9fafb;
+  --input-bg: #f9fafb;
+  --popup-bg: #ffffff;
+  --divider: #e5e7eb;
+  --primary-text: #111827;
+  --secondary-text: #4b5563;
+  --muted-text: #9ca3af;
+  --accent: #2563eb;
+  --accent-text: #ffffff;
+  --selected-item-bg: #e5ecfc;
+  --overdue-text: #dc2626;
+  --warning-text: #d97706;
+  --success-text: #059669;
+  --sidebar-bg: #f9fafb;
+  --sidebar-fg: #374151;
+  --sidebar-fg-strong: #111827;
+  --sidebar-muted: #9ca3af;
+  --sidebar-hover-bg: #f3f4f6;
+  --sidebar-selected-bg: #e3eafb;
+  --sidebar-selected-fg: #1d4ed8;
+  --sidebar-border: #e5e7eb;
+}
+
+/* Onyx —— 近黑高对比深色(Gemini「Midnight Dark」,改名避与 dark-midnight 撞) */
+.dark-onyx {
+  --window-bg: #000000;
+  --titlebar-bg: #121212;
+  --content-bg: #121212;
+  --card-bg: #1e1e1e;
+  --card-hover-bg: #2c2c2c;
+  --input-bg: #2c2c2c;
+  --popup-bg: #1e1e1e;
+  --divider: #333333;
+  --primary-text: #f3f4f6;
+  --secondary-text: #9ca3af;
+  --muted-text: #6b7280;
+  --accent: #60a5fa;
+  --accent-text: #111827;
+  --selected-item-bg: #1b242e;
+  --overdue-text: #f87171;
+  --warning-text: #fbbf24;
+  --success-text: #34d399;
+  --sidebar-bg: #1a1a1a;
+  --sidebar-fg: #d1d5db;
+  --sidebar-fg-strong: #f3f4f6;
+  --sidebar-muted: #6b7280;
+  --sidebar-hover-bg: #262626;
+  --sidebar-selected-bg: #222b36;
+  --sidebar-selected-fg: #60a5fa;
+  --sidebar-border: #333333;
+}
+
+/* Grove —— 暖绿灰护眼浅色(Gemini「Forest」,改名避与 glass-forest 撞) */
+.light-grove {
+  --window-bg: #ebece5;
+  --titlebar-bg: #f4f5f0;
+  --content-bg: #fcfcfa;
+  --card-bg: #ffffff;
+  --card-hover-bg: #f4f5f0;
+  --input-bg: #f4f5f0;
+  --popup-bg: #ffffff;
+  --divider: #dde0d8;
+  --primary-text: #2c3329;
+  --secondary-text: #5a6356;
+  --muted-text: #8e9689;
+  --accent: #4d7c0f;
+  --accent-text: #ffffff;
+  --selected-item-bg: #e7eddf;
+  --overdue-text: #b91c1c;
+  --warning-text: #b45309;
+  --success-text: #15803d;
+  --sidebar-bg: #f0f2eb;
+  --sidebar-fg: #3f4a3b;
+  --sidebar-fg-strong: #2c3329;
+  --sidebar-muted: #8e9689;
+  --sidebar-hover-bg: #e4e7dc;
+  --sidebar-selected-bg: #dfe7d4;
+  --sidebar-selected-fg: #365314;
+  --sidebar-border: #dde0d8;
+}
+
+/* Dusk —— 现代蓝调深色(Gemini「Ocean Dusk」,IDE 风) */
+.dark-dusk {
+  --window-bg: #020617;
+  --titlebar-bg: #0f172a;
+  --content-bg: #0f172a;
+  --card-bg: #1e293b;
+  --card-hover-bg: #334155;
+  --input-bg: #1e293b;
+  --popup-bg: #1e293b;
+  --divider: #334155;
+  --primary-text: #f8fafc;
+  --secondary-text: #94a3b8;
+  --muted-text: #64748b;
+  --accent: #38bdf8;
+  --accent-text: #020617;
+  --selected-item-bg: #142b43;
+  --overdue-text: #f43f5e;
+  --warning-text: #f59e0b;
+  --success-text: #10b981;
+  --sidebar-bg: #162032;
+  --sidebar-fg: #cbd5e1;
+  --sidebar-fg-strong: #f8fafc;
+  --sidebar-muted: #64748b;
+  --sidebar-hover-bg: #1e293b;
+  --sidebar-selected-bg: #1a334b;
+  --sidebar-selected-fg: #38bdf8;
+  --sidebar-border: #1e293b;
+}
+
+/* ===== 第二批 Gemini 主题:仿知名 App 风格(键名/缺失 token 已对齐) ===== */
+/* OLED —— 纯黑 OLED + 赛博青(Gemini「OLED Geek」) */
+.dark-oled {
+  --window-bg: #000000;
+  --titlebar-bg: #000000;
+  --content-bg: #000000;
+  --card-bg: #121212;
+  --card-hover-bg: #1a1a1a;
+  --input-bg: #121212;
+  --popup-bg: #121212;
+  --divider: #222222;
+  --primary-text: #ededed;
+  --secondary-text: #a1a1a1;
+  --muted-text: #666666;
+  --accent: #06b6d4;
+  --accent-text: #000000;
+  --selected-item-bg: #011619;
+  --overdue-text: #ef4444;
+  --warning-text: #f59e0b;
+  --success-text: #10b981;
+  --sidebar-bg: #000000;
+  --sidebar-fg: #d4d4d4;
+  --sidebar-fg-strong: #ededed;
+  --sidebar-muted: #666666;
+  --sidebar-hover-bg: #111111;
+  --sidebar-selected-bg: #011619;
+  --sidebar-selected-fg: #06b6d4;
+  --sidebar-border: #222222;
+}
+
+/* Notion —— 高级暖灰,内容优先(Gemini「Notion Gray」) */
+.light-notion {
+  --window-bg: #f7f6f3;
+  --titlebar-bg: #ffffff;
+  --content-bg: #ffffff;
+  --card-bg: #ffffff;
+  --card-hover-bg: #f1f1ef;
+  --input-bg: #f7f6f3;
+  --popup-bg: #ffffff;
+  --divider: #e9e9e7;
+  --primary-text: #37352f;
+  --secondary-text: #787774;
+  --muted-text: #9b9a97;
+  --accent: #2383e2;
+  --accent-text: #ffffff;
+  --selected-item-bg: #e4f0fb;
+  --overdue-text: #eb5757;
+  --warning-text: #d9730d;
+  --success-text: #0f7b6c;
+  --sidebar-bg: #f7f6f3;
+  --sidebar-fg: #5a5854;
+  --sidebar-fg-strong: #37352f;
+  --sidebar-muted: #9b9a97;
+  --sidebar-hover-bg: #efefed;
+  --sidebar-selected-bg: #e4f0fb;
+  --sidebar-selected-fg: #1865b5;
+  --sidebar-border: #e9e9e7;
+}
+
+/* Things —— 冷白通透 + 纯正亮蓝(Gemini「Things Light」,macOS 质感) */
+.light-things {
+  --window-bg: #f4f5f5;
+  --titlebar-bg: #ffffff;
+  --content-bg: #ffffff;
+  --card-bg: #ffffff;
+  --card-hover-bg: #f2f2f7;
+  --input-bg: #f2f2f7;
+  --popup-bg: #ffffff;
+  --divider: #e5e5ea;
+  --primary-text: #000000;
+  --secondary-text: #8a8a8d;
+  --muted-text: #c7c7cc;
+  --accent: #1183fe;
+  --accent-text: #ffffff;
+  --selected-item-bg: #e2f0ff;
+  --overdue-text: #ff3b30;
+  --warning-text: #ff9500;
+  --success-text: #34c759;
+  --sidebar-bg: #f4f5f5;
+  --sidebar-fg: #3a3a3c;
+  --sidebar-fg-strong: #000000;
+  --sidebar-muted: #8a8a8d;
+  --sidebar-hover-bg: #eaeaeb;
+  --sidebar-selected-bg: #e2f0ff;
+  --sidebar-selected-fg: #0a5bc4;
+  --sidebar-border: #e5e5ea;
+}
+
+/* TickTick —— 柔和靛蓝效率风(Gemini「TickTick Blue」) */
+.light-ticktick {
+  --window-bg: #f8f9fa;
+  --titlebar-bg: #ffffff;
+  --content-bg: #ffffff;
+  --card-bg: #ffffff;
+  --card-hover-bg: #f1f3f5;
+  --input-bg: #f1f3f5;
+  --popup-bg: #ffffff;
+  --divider: #e9ecef;
+  --primary-text: #333333;
+  --secondary-text: #868e96;
+  --muted-text: #adb5bd;
+  --accent: #5c7cfa;
+  --accent-text: #ffffff;
+  --selected-item-bg: #ebeffa;
+  --overdue-text: #fa5252;
+  --warning-text: #fab005;
+  --success-text: #40c057;
+  --sidebar-bg: #f8f9fa;
+  --sidebar-fg: #495057;
+  --sidebar-fg-strong: #333333;
+  --sidebar-muted: #868e96;
+  --sidebar-hover-bg: #efeff0;
+  --sidebar-selected-bg: #ebeffa;
+  --sidebar-selected-fg: #3b5bdb;
+  --sidebar-border: #e9ecef;
+}
+
+/* Linear —— 紫灰超深底 + 高饱和紫罗兰(Gemini「Linear Dark」,硅谷顶级暗色) */
+.dark-linear {
+  --window-bg: #151618;
+  --titlebar-bg: #1a1b1e;
+  --content-bg: #1a1b1e;
+  --card-bg: #222326;
+  --card-hover-bg: #2c2d31;
+  --input-bg: #222326;
+  --popup-bg: #28292d;
+  --divider: #2c2d31;
+  --primary-text: #f2f2f2;
+  --secondary-text: #8a8f98;
+  --muted-text: #5f6368;
+  --accent: #5e6ad2;
+  --accent-text: #ffffff;
+  --selected-item-bg: #222434;
+  --overdue-text: #e07a5f;
+  --warning-text: #f2c94c;
+  --success-text: #4fa782;
+  --sidebar-bg: #151618;
+  --sidebar-fg: #e0e0e0;
+  --sidebar-fg-strong: #f2f2f2;
+  --sidebar-muted: #8a8f98;
+  --sidebar-hover-bg: #1f2023;
+  --sidebar-selected-bg: #20212e;
+  --sidebar-selected-fg: #8b93e0;
+  --sidebar-border: #222326;
+}
+
+/* 把颜色变量注册为 Tailwind 语义色(bg-card、text-text-1 等) */
+@theme inline {
+  --color-window: var(--window-bg);
+  --color-titlebar: var(--titlebar-bg);
+  --color-sidebar: var(--sidebar-bg);
+  --color-sidebar-fg: var(--sidebar-fg);
+  --color-sidebar-strong: var(--sidebar-fg-strong);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-hover: var(--sidebar-hover-bg);
+  --color-sidebar-selected: var(--sidebar-selected-bg);
+  --color-sidebar-selected-fg: var(--sidebar-selected-fg);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-content: var(--content-bg);
+  --color-card: var(--card-bg);
+  --color-card-hover: var(--card-hover-bg);
+  --color-input: var(--input-bg);
+  --color-text-1: var(--primary-text);
+  --color-text-2: var(--secondary-text);
+  --color-muted: var(--muted-text);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--accent-text);
+  --color-divider: var(--divider);
+  --color-selected: var(--selected-item-bg);
+  --color-overdue: var(--overdue-text);
+  --color-warning: var(--warning-text);
+  --color-success: var(--success-text);
+  --color-popup: var(--popup-bg);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+
+body {
+  font-family: var(--app-font, "Microsoft YaHei UI", "Segoe UI", system-ui, sans-serif);
+  /* 字号随根 rem 缩放(全局字号见 applyFontSettings 设置 html font-size) */
+  font-size: 1rem;
+  line-height: var(--app-line-height, 1.55);
+  background: var(--window-bg);
+  color: var(--primary-text);
+}
+
+/* ===== 细长滚动条(对齐旧版 ScrollThumb:靠边 3px 圆角细条 + 透明轨道 +
+   无箭头按钮,默认 #55888888、悬停/拖动加深 #99888888,滑块最短 28px) ===== */
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  /* 7px 槽内留 2px 透明边 → 可见滑块 3px(旧版同款) */
+  background: rgba(136, 136, 136, 0.33);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 4px;
+  min-height: 28px;
+  min-width: 28px;
+}
+*::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:active {
+  background: rgba(136, 136, 136, 0.6);
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* 玻璃系:面板背板模糊(模糊对象是应用内渐变背景) */
+.glassy .bg-card,
+.glassy .bg-input {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.glassy .bg-popup {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.glassy .bg-sidebar {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.glassy .bg-titlebar {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* 完成任务时的滑出动画(对齐旧版「向左滑出+淡出」) */
+@keyframes task-complete-out {
+  to {
+    transform: translateX(-48px);
+    opacity: 0;
+  }
+}
+.completing {
+  animation: task-complete-out 0.45s ease-in forwards;
+}
+
+/* 任务项拖拽时的视觉反馈 */
+.dragging {
+  opacity: 0.4;
+}
+
+/* 日历面板进场 = 旧版 Anim.FadeSlideIn(dx:24):
+   淡入 200ms CubicEase.EaseOut + 右滑入 280ms BackEase 弹簧(轻微过冲) */
+@keyframes cal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes cal-slide {
+  from { transform: translateX(24px); }
+  to { transform: translateX(0); }
+}
+.cal-in {
+  animation:
+    cal-fade 0.2s cubic-bezier(0.33, 1, 0.68, 1) both,
+    cal-slide 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
+}
+
+/* ===== 旧版 Anim 体系移植(AnimationHelper.cs):
+   Fast 120ms / Base 200ms CubicEase.EaseOut(淡入淡出)
+   Emphasis 280ms BackEase 弹簧(位移/缩放,轻微过冲;Opacity 不用弹簧) ===== */
+@keyframes anim-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes anim-scale {
+  from { transform: scale(0.96); }
+  to { transform: scale(1); }
+}
+/* 中央区视图切换 / 日历切视图 = IntroScaleFade(缩放 0.96→1 弹簧 + 淡入) */
+.view-in {
+  animation:
+    anim-fade 0.2s cubic-bezier(0.33, 1, 0.68, 1) both,
+    anim-scale 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
+}
+/* 模态框进场 = Anim.Intro。注意:Tailwind v4 的 -translate-x-1/2 走独立
+   translate 属性,keyframes 只能动 transform:scale,否则平移叠加双倍偏移 */
+.modal-in {
+  animation:
+    anim-fade 0.2s cubic-bezier(0.33, 1, 0.68, 1) both,
+    anim-scale 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
+}
+/* 模态遮罩淡入 */
+.backdrop-in {
+  animation: anim-fade 0.15s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+/* 弹层/右键菜单:Fast 档淡入 + 轻微下滑 */
+@keyframes pop-slide {
+  from { transform: translateY(-4px); }
+  to { transform: translateY(0); }
+}
+.pop-in {
+  animation:
+    anim-fade 0.12s cubic-bezier(0.33, 1, 0.68, 1) both,
+    pop-slide 0.15s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+/* 日历翻页 = FadeSlideIn(dx:±24),内容沿翻页方向弹性滑入 */
+@keyframes flip-from-left {
+  from { transform: translateX(-24px); }
+  to { transform: translateX(0); }
+}
+@keyframes flip-from-right {
+  from { transform: translateX(24px); }
+  to { transform: translateX(0); }
+}
+.cal-flip-prev {
+  animation:
+    anim-fade 0.2s cubic-bezier(0.33, 1, 0.68, 1) both,
+    flip-from-left 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
+}
+.cal-flip-next {
+  animation:
+    anim-fade 0.2s cubic-bezier(0.33, 1, 0.68, 1) both,
+    flip-from-right 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
+}
+/* 提醒气泡进场:淡入 + 上方滑落(对齐旧版 ToastWindow 进场) */
+@keyframes toast-slide {
+  from { transform: translateY(-10px); }
+  to { transform: translateY(0); }
+}
+.toast-in {
+  animation:
+    anim-fade 0.2s cubic-bezier(0.33, 1, 0.68, 1) both,
+    toast-slide 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
+}
+
+/* 撤回 Toast 底部 5 秒倒计时进度条:宽度从满到空(随 toast id 重挂重置) */
+@keyframes undo-countdown {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+.undo-bar {
+  animation: undo-countdown 5s linear forwards;
+}
+
+/* 便签 Markdown 预览样式 */
+.md-body .md-h1 { font-size: 1.4em; font-weight: 700; margin: 0.4em 0; }
+.md-body .md-h2 { font-size: 1.25em; font-weight: 700; margin: 0.4em 0; }
+.md-body .md-h3 { font-size: 1.1em; font-weight: 600; margin: 0.3em 0; }
+.md-body .md-h4 { font-size: 1em; font-weight: 600; margin: 0.3em 0; }
+.md-body .md-p { margin: 0.15em 0; }
+.md-body .md-ul { margin: 0.2em 0; padding-left: 1.4em; list-style: disc; }
+.md-body .md-code {
+  background: var(--input-bg);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-family: Consolas, monospace;
+  font-size: 0.9em;
+}
+.md-body .md-pre {
+  background: var(--input-bg);
+  border-radius: 8px;
+  padding: 0.6em 0.8em;
+  margin: 0.4em 0;
+  font-family: Consolas, monospace;
+  font-size: 0.9em;
+  overflow-x: auto;
+  white-space: pre;
+}
+.md-body .md-quote {
+  border-left: 3px solid var(--accent);
+  padding-left: 0.7em;
+  margin: 0.3em 0;
+  color: var(--secondary-text);
+}
+.md-body .md-link { color: var(--accent); text-decoration: underline; }
+
+/* ===== 便签所见即所得编辑器(tiptap):输入 md 语法实时渲染 ===== */
+.note-editor .note-prose {
+  min-height: 100%;
+  padding: 0.75rem 1rem 2rem;
+  outline: none;
+  color: var(--primary-text);
+  /* 便签字体/字号/行距:由 NotesView 在 .note-editor 上设 --note-* 变量,
+     直接落在 .note-prose 自身(否则 prose 的 font-size 会盖掉父级继承值);
+     未设时回退默认字号 / 全局行距 / 继承全局字体 */
+  font-family: var(--note-font-family, inherit);
+  font-size: var(--note-font-size, 0.875rem);
+  line-height: var(--note-line-height, var(--app-line-height, 1.55));
+  caret-color: var(--accent);
+  word-break: break-word;
+}
+.note-prose h1 { font-size: 1.4em; font-weight: 700; margin: 0.4em 0; }
+.note-prose h2 { font-size: 1.25em; font-weight: 700; margin: 0.4em 0; }
+.note-prose h3 { font-size: 1.1em; font-weight: 600; margin: 0.3em 0; }
+.note-prose h4 { font-size: 1em; font-weight: 600; margin: 0.3em 0; }
+.note-prose p { margin: 0.15em 0; }
+.note-prose ul:not([data-type="taskList"]) {
+  margin: 0.2em 0;
+  padding-left: 1.4em;
+  list-style: disc;
+}
+.note-prose ol { margin: 0.2em 0; padding-left: 1.4em; list-style: decimal; }
+.note-prose code {
+  background: var(--input-bg);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-family: Consolas, monospace;
+  font-size: 0.9em;
+}
+.note-prose pre {
+  background: var(--input-bg);
+  border-radius: 8px;
+  padding: 0.6em 0.8em;
+  margin: 0.4em 0;
+  font-family: Consolas, monospace;
+  font-size: 0.9em;
+  overflow-x: auto;
+}
+.note-prose pre code { background: transparent; padding: 0; }
+.note-prose blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 0.7em;
+  margin: 0.3em 0;
+  color: var(--secondary-text);
+}
+.note-prose a { color: var(--accent); text-decoration: underline; }
+.note-prose hr { border: none; border-top: 1px solid var(--divider); margin: 0.6em 0; }
+.note-prose img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 0.3em 0;
+}
+.note-prose img.ProseMirror-selectednode { outline: 2px solid var(--accent); }
+/* 表格(@tiptap/extension-table):细边框 + 表头底色 + 选中单元格高亮 */
+.note-prose table {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  width: auto;
+  table-layout: fixed;
+  overflow: hidden;
+}
+.note-prose table td,
+.note-prose table th {
+  border: 1px solid var(--divider);
+  padding: 0.3em 0.5em;
+  vertical-align: top;
+  min-width: 3em;
+  position: relative;
+}
+.note-prose table th {
+  background: var(--card-hover);
+  font-weight: 600;
+  text-align: left;
+}
+.note-prose table .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklab, var(--accent) 16%, transparent);
+  pointer-events: none;
+}
+.note-prose table .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  cursor: col-resize;
+}
+/* 任务列表:复选框行(对齐旧版可勾选任务项) */
+.note-prose ul[data-type="taskList"] {
+  margin: 0.2em 0;
+  padding-left: 0.1em;
+  list-style: none;
+}
+.note-prose ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45em;
+}
+.note-prose ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.25em;
+}
+.note-prose ul[data-type="taskList"] li > label input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.note-prose ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--muted-text);
+  text-decoration: line-through;
+}
+
+/* ============ 界面版式(design):统一 DOM + CSS 变量换肤(参考 Gemini 三套) ============
+   挂在 <html>.design-<key>;双类选择器特异性高于 Tailwind 单类工具,可覆盖其内联工具类。
+   经典(classic)= 基线默认,不写覆盖即保持现状。 */
+
+/* —— 新元素基线:勾选框颜色走 --pri(优先级色);优先级圆点/信号图标、标签后缀默认隐藏 —— */
+.task-check {
+  border-color: var(--muted-text);
+  color: var(--accent-text);
+  /* 勾选框尺寸:自定义优先(--check-size),否则版式默认(--cb-base);再按层级缩放(--ds) */
+  width: calc(var(--check-size, var(--cb-base, 1rem)) * var(--ds, 1));
+  height: calc(var(--check-size, var(--cb-base, 1rem)) * var(--ds, 1));
+  /* 复选框对齐标题首行:9 套版式统一 flex-start 顶对齐,标题换行(break-words)后复选框仍贴第一行,
+     绝不用 items-center(对齐窄窗文档);随尺寸 + 层级缩放(--ds)自适应,圆心落首行中线。 */
+  margin-top: calc((1.25rem - var(--check-size, var(--cb-base, 1rem))) / 2 * var(--ds, 1));
+}
+
+/* —— 层级等比缩小:子待办越深,勾选框/字体/行距越小(--ds 缩放因子,封顶第 3 层)——
+   --lvl 为 TaskItem 注入的缩进层级数;勾选框尺寸经 --ds、标题/副信息字号与行高同步缩放。 */
+.task-item {
+  /* 层级缩放:轻微(每层 6%,封顶第 2 层)——窄窗下主要靠字重/颜色/引导线分层,不靠大幅缩小 */
+  --ds: calc(1 - 0.06 * min(var(--lvl, 0), 2));
+  /* 阶梯缩进:子任务复选框对齐父任务文字开头(步长 = 父复选框宽 + 间距,各版式给 --indent-step) */
+  margin-left: calc(var(--lvl, 0) * var(--indent-step, 26px));
+  /* 垂直内边距随层级轻微收紧(横向不动,宽度不变);各版式只给 --pad-y 默认值 */
+  padding-top: calc(var(--pad-y, 0.5rem) * var(--ds, 1));
+  padding-bottom: calc(var(--pad-y, 0.5rem) * var(--ds, 1));
+}
+.task-title { font-size: calc(0.875rem * var(--ds, 1)); line-height: 1.45; }
+.task-meta { font-size: calc(0.75rem * var(--ds, 1)); }
+/* 子任务视觉降级:字重降一档 + 行高收紧 + 颜色变浅(未完成)——用层次而非尺寸区分主次 */
+.task-item:not([data-level="0"]) .task-title { font-weight: 400; line-height: 1.35; }
+.task-item:not([data-level="0"]) .task-title:not(.text-muted) { color: var(--secondary-text); }
+.task-check.is-done { background: var(--accent); border-color: var(--accent); }
+.task-pri-dot {
+  display: none;
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 9999px;
+  /* 标题行改 items-start 后,把圆点下移居中到首行(与勾选框同基准 1.25rem),换行也贴第一行 */
+  margin-top: calc((1.25rem - 0.5rem) / 2 * var(--ds, 1));
+}
+.task-pri-icon { display: none; }
+.task-tag { display: none; }
+.task-tag::before { content: "#"; opacity: 0.7; }
+
+/* 悬停「突出」动画:鼠标移到待办上轻微抬起 + 投影(借鉴粗野版式的高亮手感,套到所有版式)。
+   各版式若自带 :hover 位移/投影(粗野、可爱、流体)因更高特异性保留自己的风格;
+   transition 同时保留颜色过渡,故默认背景 hover 仍平滑。 */
+/* hover「突出」投影强度:浅色弱、暗色/玻璃强。挂在主题根 / 玻璃面板上,
+   这样待办列表与主侧栏等非待办元素都能取到同一个 --hover-shadow。 */
+:root {
+  --hover-shadow: 0 6px 16px -6px rgb(0 0 0 / 0.22);
+}
+.dark,
+.glassy {
+  --hover-shadow: 0 7px 20px -7px rgb(0 0 0 / 0.5);
+}
+.task-item,
+.clip-lift {
+  transition: transform 0.14s ease, box-shadow 0.14s ease,
+    background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.task-item:hover,
+.clip-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--hover-shadow);
+  z-index: 1;
+}
+/* 第一/第二侧栏的 hover 抬起动画已取消(.nav-lift 类仍挂在元素上但无效果,便于日后恢复) */
+
+/* ========== 苹果 Things 风:无边框 + 留白 + 圆形细线勾选 + 小圆点优先级 ========== */
+.design-apple .task-item {
+  border-color: transparent;
+  border-bottom: 1px solid var(--divider);
+  border-radius: 0;
+  background: transparent;
+  align-items: flex-start;
+  --pad-y: 0.625rem;
+  --indent-step: 31px; /* 复选框 19 + 间距 12 */
+  padding-inline: 0.75rem;
+  gap: 0.75rem;
+}
+.design-apple .task-item:hover { background: var(--card-hover-bg); }
+.design-apple .app-task-list { gap: 0; }
+.design-apple .task-check {
+  --cb-base: 19px;
+  border-width: 1.5px;
+  border-color: var(--muted-text);
+}
+.design-apple .task-check.is-done { border-color: var(--accent); }
+.design-apple .task-title { font-weight: 500; }
+.design-apple .task-tag { display: inline; }
+
+/* ========== 极客 Linear 风:紧凑 + 1px 下边框 + 方圆角勾选 + 前置信号图标 + 暗胶囊标签 ========== */
+.design-linear .task-item {
+  border: none;
+  border-bottom: 1px solid var(--divider);
+  border-radius: 0;
+  background: transparent;
+  align-items: flex-start;
+  --pad-y: 0.375rem;
+  --indent-step: 26px; /* 复选框 16 + 间距 10 */
+  padding-inline: 0.625rem;
+  gap: 0.6rem;
+}
+.design-linear .task-item:hover { background: var(--card-hover-bg); }
+.design-linear .app-task-list { gap: 0; }
+.design-linear .task-check {
+  --cb-base: 1rem;
+  border-radius: 4px;
+  border-width: 1px;
+  border-color: var(--muted-text);
+}
+.design-linear .task-check.is-done { border-radius: 4px; border-color: var(--accent); }
+.design-linear .task-title { font-weight: 500; }
+.design-linear .task-tag {
+  display: inline;
+  background: var(--card-hover-bg);
+  color: var(--secondary-text);
+  padding: 0.02rem 0.35rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+.design-linear .task-tag::before { content: ""; }
+
+/* ========== 可爱 Waterdrop 风:独立卡片 + 大圆角 + 柔阴影 + 大圆粗勾选 + 彩色胶囊 ========== */
+.design-cute .task-item {
+  border-radius: 1rem;
+  border-color: var(--divider);
+  box-shadow: 0 2px 8px -2px rgb(0 0 0 / 0.06);
+  align-items: flex-start;
+  --pad-y: 0.75rem;
+  --indent-step: 38px; /* 复选框 24 + 间距 14 */
+  padding-inline: 0.85rem;
+  gap: 0.9rem;
+}
+/* 可爱版式 hover 统一为通用「抬起 + 投影」动画(不再用自己的 box-shadow / 固定底色) */
+.design-cute .task-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--hover-shadow);
+  z-index: 1;
+}
+.dark .design-cute .task-item:not(:hover),
+.glassy .design-cute .task-item:not(:hover) { box-shadow: 0 2px 10px -2px rgb(0 0 0 / 0.35); }
+.design-cute .app-task-list { gap: 0.5rem; padding-top: 0.25rem; }
+.design-cute .task-check {
+  --cb-base: 1.5rem;
+  border-width: 2px;
+}
+.design-cute .task-title { font-weight: 700; }
+.design-cute .task-tag {
+  display: inline;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  padding: 0.05rem 0.45rem;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+.design-cute .task-tag::before { content: ""; }
+.design-cute .task-meta > span {
+  background: var(--card-hover-bg);
+  padding: 0.05rem 0.45rem;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+/* ============ 多级子任务(最多 6 级):半满态 + 进度条 + 克制缩进 + 引导线 + 悬浮箭头 ============ */
+
+/* 缩进:统一走基线 .task-item 的 margin-left = lvl × var(--indent-step)(各版式按复选框+间距对齐父文字) */
+
+/* 半满态标记:经典隐藏(父复选框保持空);苹果/极客用横杠,可爱用圆点 */
+.task-check .task-half { display: none; }
+.design-apple .task-check .task-half,
+.design-linear .task-check .task-half { display: block; }
+.design-apple .task-check.is-indeterminate,
+.design-linear .task-check.is-indeterminate {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.design-cute .task-check.is-indeterminate::after {
+  content: "";
+  height: 0.55rem;
+  width: 0.55rem;
+  border-radius: 9999px;
+  background: var(--pri);
+}
+
+/* 子任务进度条:经典隐藏;苹果细(2px),可爱粗(6px);极客用 1/3 计数不用条 */
+.task-progress {
+  display: none;
+  height: 2px;
+  width: 100%;
+  border-radius: 9999px;
+  background: var(--divider);
+  overflow: hidden;
+}
+.task-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.design-apple .task-progress { display: block; }
+.design-cute .task-progress { display: block; height: 6px; }
+/* 进度条已表达进度,苹果/可爱隐藏副信息里的 n/m 计数(极客保留) */
+.design-apple .task-subcount,
+.design-cute .task-subcount { display: none; }
+
+/* 树状引导线:极客常驻、苹果 hover 显现;在缩进行左侧画竖线(可爱靠卡片不画线) */
+.design-linear .task-item:not([data-level="0"])::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--indent-step, 26px) * -0.5);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--divider);
+}
+/* 苹果/可爱/白玻/微色调/双层面板:子任务前竖线引导(对齐流体:1px 浅灰常驻) */
+.design-apple .task-item:not([data-level="0"])::before,
+.design-cute .task-item:not([data-level="0"])::before,
+.design-frost .task-item:not([data-level="0"])::before,
+.design-tinted .task-item:not([data-level="0"])::before,
+.design-panel .task-item:not([data-level="0"])::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--indent-step, 26px) * -0.5);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--divider);
+}
+
+/* 折叠箭头:苹果/极客平时隐藏、hover 整行才显现(防误触);可爱/经典常驻 */
+.design-apple .task-collapse,
+.design-linear .task-collapse { opacity: 0; }
+.design-apple .task-item:hover .task-collapse,
+.design-linear .task-item:hover .task-collapse { opacity: 1; }
+
+/* ============ 追加 3 套版式:文档 Notion / 流体 Fluent / 粗野 Brutalism ============ */
+
+/* ========== 文档块感 Notion:弱边界 + 文本流 + 灰方块半满 + 实线引导 ========== */
+.design-notion .task-item {
+  border-color: transparent;
+  border-radius: 4px;
+  background: transparent;
+  align-items: flex-start;
+  --pad-y: 0.25rem;
+  --indent-step: 25px; /* 复选框 ~17 + 间距 8 */
+  padding-inline: 0.4rem;
+  gap: 0.5rem;
+}
+.design-notion .task-item:hover { background: var(--card-hover-bg); }
+.design-notion .app-task-list { gap: 0.1rem; }
+.design-notion .task-check {
+  --cb-base: 1.05rem;
+  border-radius: 3px;
+  border-width: 1px;
+  border-color: var(--muted-text);
+}
+.design-notion .task-check .task-half { display: none; }
+.design-notion .task-check.is-indeterminate::after {
+  content: "";
+  height: 0.55rem;
+  width: 0.55rem;
+  border-radius: 1px;
+  background: var(--muted-text);
+}
+.design-notion .task-title { font-weight: 400; }
+.design-notion .task-tag { display: inline; }
+.design-notion .task-tag::before { content: ""; }
+.design-notion .task-item:not([data-level="0"])::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--indent-step, 25px) * -0.5);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--divider);
+}
+.design-notion .task-collapse { opacity: 0; }
+.design-notion .task-item:hover .task-collapse { opacity: 1; }
+
+/* ========== 流体拟态 Fluent:毛玻璃 + 发光描边 + 发光进度条 + 发光引导线 ========== */
+.design-fluent .task-item {
+  background: color-mix(in srgb, var(--card-bg) 55%, transparent);
+  backdrop-filter: blur(8px);
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, white 30%, var(--divider));
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
+  align-items: flex-start;
+  --pad-y: 0.6rem;
+  --indent-step: 31px; /* 复选框 20 + 间距 11 */
+  padding-inline: 0.7rem;
+  gap: 0.7rem;
+}
+.design-fluent .task-item:hover {
+  background: color-mix(in srgb, var(--card-bg) 72%, transparent);
+  transform: translateY(-2px);
+  box-shadow: var(--hover-shadow);
+  z-index: 1;
+}
+.design-fluent .app-task-list { gap: 0.4rem; padding-top: 0.25rem; }
+.design-fluent .task-check {
+  --cb-base: 1.25rem;
+  border-color: color-mix(in srgb, white 45%, var(--divider));
+}
+.design-fluent .task-check .task-half {
+  display: block;
+  color: var(--accent);
+  filter: drop-shadow(0 0 3px var(--accent));
+}
+.design-fluent .task-check.is-indeterminate { border-color: var(--accent); }
+.design-fluent .task-progress { display: block; height: 3px; }
+.design-fluent .task-progress-fill { box-shadow: 0 0 8px var(--accent); }
+.design-fluent .task-subcount { display: none; }
+.design-fluent .task-tag {
+  display: inline;
+  background: color-mix(in srgb, white 26%, transparent);
+  border-radius: 9999px;
+  padding: 0.02rem 0.4rem;
+}
+.design-fluent .task-tag::before { content: ""; }
+.design-fluent .task-item:not([data-level="0"])::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--indent-step, 26px) * -0.5);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--divider);
+}
+.design-fluent .task-collapse { opacity: 0; }
+.design-fluent .task-item:hover .task-collapse { opacity: 1; }
+
+/* ========== 新粗野像素 Brutalism:粗黑边 + 硬偏移阴影 + 方块勾选 + 贴纸标签 ========== */
+/* 用 --primary-text 充当「黑」:浅色近黑、深色近白,兼容各主题且不失粗野感 */
+.design-brutal .task-item {
+  border: 2px solid var(--primary-text);
+  border-radius: 2px;
+  background: var(--card-bg);
+  box-shadow: 3px 3px 0 0 var(--primary-text);
+  align-items: flex-start;
+  --pad-y: 0.5rem;
+  --indent-step: 31px; /* 复选框 20 + 间距 11 */
+  padding-inline: 0.6rem;
+  gap: 0.7rem;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.design-brutal .task-item:hover {
+  box-shadow: 5px 5px 0 0 var(--primary-text);
+  transform: translate(-2px, -2px);
+  background: var(--card-bg);
+}
+.design-brutal .app-task-list { gap: 0.75rem; padding-right: 6px; }
+.design-brutal .task-check {
+  --cb-base: 1.25rem;
+  border-radius: 0;
+  border-width: 2px;
+  border-color: var(--primary-text);
+}
+.design-brutal .task-check.is-done { background: var(--accent); border-color: var(--primary-text); }
+.design-brutal .task-check .task-half { display: block; color: var(--primary-text); }
+.design-brutal .task-check.is-indeterminate { background: transparent; }
+.design-brutal .task-title { font-weight: 700; }
+.design-brutal .task-tag {
+  display: inline;
+  background: color-mix(in srgb, var(--accent) 25%, var(--card-bg));
+  color: var(--primary-text);
+  border: 1px solid var(--primary-text);
+  border-radius: 0;
+  padding: 0 0.3rem;
+  font-weight: 700;
+  box-shadow: 1px 1px 0 0 var(--primary-text);
+}
+.design-brutal .task-tag::before { content: ""; }
+.design-brutal .task-item:not([data-level="0"])::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--indent-step, 31px) * -0.5);
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--primary-text);
+}
+.design-brutal .task-collapse { opacity: 0; font-weight: 900; }
+.design-brutal .task-item:hover .task-collapse { opacity: 1; }
+
+/* ============ 优先级展示(prio-*):与版式正交,设置里选 苹果/极客/文档/无 ============
+   容器 data-pri=1/2/3,--pri=该级色(低绿/中黄/高红)。基线勾选框环已中性,优先级表达全由本段按设置叠加。 */
+.task-pri-mark { display: none; }
+
+/* 复选框环着色:复选框圆环按优先级着色(不覆盖完成/半满态的强调色) */
+.prio-apple .task-check:not(.is-done):not(.is-indeterminate) { border-color: var(--pri); }
+
+/* 左侧竖线:行最左 2px gutter 竖线(IDE 风) */
+.prio-linear .task-item { border-left: 2px solid var(--pri); }
+
+/* 圆点着色:标题前一个按优先级着色的小圆点(不改标题文字色) */
+.prio-notion .task-pri-dot { display: block; }
+
+/* 无:不展示优先级(基线已中性,无需额外规则) */
+
+/* 信号强度:左侧前置信号图标(低1/中2/高3 格),按 --pri 着色;勾选框环保持中性 */
+.prio-signal .task-pri-icon { display: flex; }
+
+/* 勾选框自定义(自定义版式生效时):html.cb-* 特异性高于版式 .design-* .task-check,故覆盖之。
+   尺寸不在此处覆盖——基线 .task-check 已用 var(--check-size, --cb-base) 解析并叠加 --ds 层级缩放。 */
+html.cb-shape .task-check { border-radius: var(--check-radius); }
+html.cb-width .task-check { border-width: var(--check-bw); }
+
+/* ============ 4 套「清晰透明」版式:高覆盖玻璃 + 纯色文字 + 收敛优先级(可读性优先) ============ */
+
+/* ========== 纯净白玻 Frost:高覆盖磨砂(随主题自适应)+ 纯色深字 ========== */
+.design-frost .task-item {
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--card-bg) 80%, transparent);
+  backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, white 45%, transparent);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.06);
+  align-items: flex-start;
+  --pad-y: 0.55rem;
+  --indent-step: 30px; /* 复选框 ~18 + 间距 12 */
+  padding-inline: 0.65rem;
+  gap: 0.75rem;
+}
+.design-frost .task-item:hover { background: color-mix(in srgb, var(--card-bg) 90%, transparent); }
+.design-frost .app-task-list { gap: 0.45rem; }
+.design-frost .task-check {
+  --cb-base: 1.125rem;
+  border-color: var(--muted-text);
+  background: color-mix(in srgb, var(--card-bg) 50%, transparent);
+}
+.design-frost .task-title { font-weight: 500; }
+.design-frost .task-check .task-half { display: block; }
+.design-frost .task-progress { display: block; }
+
+/* ========== 微色调 Tinted:高覆盖玻璃 + 优先级极淡晕染(不挡字)========== */
+.design-tinted .task-item {
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--pri) 8%, color-mix(in srgb, var(--card-bg) 80%, transparent));
+  backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, var(--pri) 22%, transparent);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.05);
+  align-items: flex-start;
+  --pad-y: 0.55rem;
+  --indent-step: 32px; /* 复选框 20 + 间距 12 */
+  padding-inline: 0.65rem;
+  gap: 0.75rem;
+}
+.design-tinted .task-item:hover {
+  background: color-mix(in srgb, var(--pri) 12%, color-mix(in srgb, var(--card-bg) 88%, transparent));
+}
+.design-tinted .app-task-list { gap: 0.45rem; }
+.design-tinted .task-check {
+  --cb-base: 1.25rem;
+  border-radius: 6px;
+  border-color: color-mix(in srgb, var(--pri) 60%, transparent);
+  background: color-mix(in srgb, var(--card-bg) 50%, transparent);
+}
+.design-tinted .task-title { font-weight: 600; }
+.design-tinted .task-check .task-half { display: block; }
+.design-tinted .task-progress { display: block; }
+
+/* ========== 双层面板 Panel:玻璃列表底 + 纯实底任务条(外透内实,最清晰)========== */
+.design-panel .app-task-list {
+  background: color-mix(in srgb, var(--card-bg) 35%, transparent);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  padding: 0.4rem;
+  gap: 0.35rem;
+  margin: 0 0.5rem 0.25rem;
+}
+.design-panel .task-item {
+  border-radius: 0.6rem;
+  background: var(--card-bg);
+  border: 1px solid var(--divider);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+  align-items: flex-start;
+  --pad-y: 0.5rem;
+  --indent-step: 33px; /* 复选框 22 + 间距 11 */
+  padding-inline: 0.6rem;
+  gap: 0.7rem;
+}
+.design-panel .task-check {
+  --cb-base: 1.375rem;
+  border-radius: 6px;
+  border-color: var(--divider);
+  background: color-mix(in srgb, var(--accent) 12%, var(--card-bg));
+}
+.design-panel .task-title { font-weight: 500; }
+.design-panel .task-check .task-half { display: block; }
+.design-panel .task-progress { display: block; }
+
+/* ============ 子任务进度显示模式(pg-*):数字 / 直线 / 圆环(填充勾选框),按自定义版式设置 ============ */
+
+/* 强制「数字」:仅 n/m 计数 */
+html.pg-count .task-subcount { display: inline; }
+html.pg-count .task-progress { display: none; }
+
+/* 强制「直线」:仅进度条 */
+html.pg-bar .task-progress { display: block; }
+html.pg-bar .task-subcount { display: none; }
+
+/* 强制「圆环」:父任务勾选框做成空心进度环(accent 已完成 + divider 余量,中心挖空);隐藏数字/进度条与半满标记 */
+html.pg-ring .task-progress { display: none; }
+html.pg-ring .task-subcount { display: none; }
+
+/* 「勾选框」进度:父任务勾选框本体即进度环。SVG track(浅灰整圈)+ fill(强调色弧,
+   stroke-dasharray=完成% / pathLength=100);按勾选框形状渲染 <circle> 或圆角 <rect>。 */
+.task-ring { display: none; }
+.task-ring circle,
+.task-ring rect { fill: none; stroke-width: 4; }
+.task-ring-track { stroke: var(--divider); }
+.task-ring-fill {
+  stroke: var(--accent);
+  stroke-dasharray: var(--pct-num, 0) 100;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.3s ease;
+}
+/* 圆形弧从 12 点开始顺时针 */
+.task-ring circle.task-ring-fill {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+html.pg-ring .task-check.is-parent:not(.is-done) {
+  position: relative;
+  border-color: transparent;
+  background: transparent;
+}
+html.pg-ring .task-check.is-parent .task-half { display: none; }
+html.pg-ring .task-check.is-parent.is-indeterminate::after { display: none; }
+html.pg-ring .task-check.is-parent .task-ring {
+  display: block;
+  position: absolute;
+  inset: -2px;
+}
