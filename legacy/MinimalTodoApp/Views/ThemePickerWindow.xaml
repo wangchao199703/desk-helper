@@ -1,0 +1,178 @@
+<Window x:Class="MinimalTodoApp.Views.ThemePickerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:dd="urn:gong-wpf-dragdrop"
+        xmlns:inf="clr-namespace:MinimalTodoApp.Infrastructure"
+        inf:Anim.Intro="True"
+        Title="{DynamicResource S.ChooseTheme}"
+        Width="376" Height="600" MinWidth="320" MinHeight="420"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="CanResize" ShowInTaskbar="False"
+        FontFamily="Microsoft YaHei UI, Segoe UI"
+        SizeChanged="Window_SizeChanged">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="6"
+                            CornerRadius="0" GlassFrameThickness="0" UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Border x:Name="RootBorder" Background="{DynamicResource PopupBg}" CornerRadius="12"
+            BorderBrush="{DynamicResource Divider}" BorderThickness="1" SnapsToDevicePixels="True">
+        <Border.Clip>
+            <RectangleGeometry x:Name="RootClip" RadiusX="12" RadiusY="12" Rect="0,0,376,600" />
+        </Border.Clip>
+
+        <Grid Margin="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- 标题栏(可拖动) -->
+            <Grid Grid.Row="0" Background="{DynamicResource TitleBarBg}" Height="40"
+                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <TextBlock Text="{DynamicResource S.ChooseTheme}" VerticalAlignment="Center"
+                           Margin="16,0,0,0" FontSize="13" FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryText}" />
+                <Button x:Name="CloseBtn" Width="40" Height="40" HorizontalAlignment="Right"
+                        Click="Close_Click" Cursor="Hand" ToolTip="{DynamicResource S.Close}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="cb" Background="Transparent">
+                                <TextBlock Text="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                           FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource SecondaryText}" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="cb" Property="Background" Value="{DynamicResource CardHoverBg}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+
+            <!-- 分组快速选择栏:点击直接滚动到该分组 -->
+            <Border Grid.Row="1" Background="{DynamicResource SidebarBg}" Padding="6,5"
+                    BorderBrush="{DynamicResource Divider}" BorderThickness="0,0,0,1">
+                <ItemsControl ItemsSource="{Binding ThemeGroups}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Content="{Binding Header}" Margin="2" Padding="9,3" FontSize="11"
+                                    Cursor="Hand" Tag="{Binding}" Click="GroupChip_Click">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="chip" CornerRadius="10" Padding="{TemplateBinding Padding}"
+                                                Background="{DynamicResource CardBg}"
+                                                BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="chip" Property="Background" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource AccentText}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+
+            <!-- 分组主题列表 -->
+            <ScrollViewer x:Name="GroupsScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="12,8,12,8">
+                <ItemsControl x:Name="GroupsItems" ItemsSource="{Binding ThemeGroups}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,0,0,12">
+                                <TextBlock Text="{Binding Header}" FontSize="12" FontWeight="Bold"
+                                           Margin="2,2,0,6" Foreground="{DynamicResource SecondaryText}" />
+                                <ItemsControl ItemsSource="{Binding Items}"
+                                              dd:DragDrop.IsDragSource="{Binding IsFavorites}"
+                                              dd:DragDrop.IsDropTarget="{Binding IsFavorites}"
+                                              dd:DragDrop.UseDefaultDragAdorner="True"
+                                              dd:DragDrop.DropHandler="{Binding DataContext.FavDropHandler, RelativeSource={RelativeSource AncestorType=Window}}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="4" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Height="48" Margin="3" Cursor="Hand"
+                                                    Click="ThemeSwatch_Click" MouseRightButtonUp="ThemeSwatch_RightClick"
+                                                    Tag="{Binding}" ToolTip="{Binding Display}">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="bd" CornerRadius="8"
+                                                                BorderThickness="2" BorderBrush="Transparent">
+                                                            <Border.Background>
+                                                                <SolidColorBrush Color="{Binding Preview}" />
+                                                            </Border.Background>
+                                                            <Grid>
+                                                                <TextBlock Text="{Binding Display}" FontSize="11"
+                                                                           TextAlignment="Center" TextWrapping="Wrap"
+                                                                           Margin="3" HorizontalAlignment="Center"
+                                                                           VerticalAlignment="Center">
+                                                                    <TextBlock.Foreground>
+                                                                        <SolidColorBrush Color="{Binding PreviewText}" />
+                                                                    </TextBlock.Foreground>
+                                                                </TextBlock>
+                                                                <!-- 当前主题角标 -->
+                                                                <Border x:Name="badge" Width="16" Height="16" CornerRadius="8"
+                                                                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                                        Margin="0,-3,-3,0" Visibility="Collapsed"
+                                                                        Background="{DynamicResource Accent}">
+                                                                    <TextBlock Text="&#xE73E;" FontSize="9"
+                                                                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                               Foreground="{DynamicResource AccentText}" />
+                                                                </Border>
+                                                            </Grid>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource Accent}" />
+                                                            </Trigger>
+                                                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource Accent}" />
+                                                                <Setter TargetName="badge" Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <!-- 收藏分组为空时的提示(右键任意主题即可收藏) -->
+                                <TextBlock Text="{DynamicResource S.ThemeFav.Empty}"
+                                           Visibility="{Binding EmptyHintVisibility}"
+                                           Margin="3,4,3,2" FontSize="11" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource MutedText}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- 底部:新建自定义主题 -->
+            <Border Grid.Row="3" BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0"
+                    Background="{DynamicResource PopupBg}" Padding="12,8">
+                <Button Content="{DynamicResource S.AddCustomTheme}" Style="{StaticResource GhostButton}"
+                        HorizontalContentAlignment="Center" Click="AddCustomTheme_Click" />
+            </Border>
+        </Grid>
+    </Border>
+</Window>

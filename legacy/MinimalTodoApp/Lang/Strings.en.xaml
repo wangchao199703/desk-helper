@@ -1,0 +1,587 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- ============ Common ============ -->
+    <sys:String x:Key="S.AppName">Todo</sys:String>
+    <sys:String x:Key="S.Confirm">OK</sys:String>
+    <sys:String x:Key="S.Cancel">Cancel</sys:String>
+    <sys:String x:Key="S.Save">Save</sys:String>
+    <sys:String x:Key="S.SaveApply">Save &amp; Apply</sys:String>
+    <sys:String x:Key="S.Close">Close</sys:String>
+    <sys:String x:Key="S.Clear">Clear</sys:String>
+    <sys:String x:Key="S.Custom">Custom</sys:String>
+    <sys:String x:Key="S.SetAsTime">Set time</sys:String>
+    <sys:String x:Key="S.SetAsReminder">Set reminder</sys:String>
+
+    <!-- ============ Title bar / tray / hamburger menu ============ -->
+    <sys:String x:Key="S.Tray.ToolTip">Todo</sys:String>
+    <sys:String x:Key="S.Tray.Show">Show main window</sys:String>
+    <sys:String x:Key="S.Tray.Exit">Exit</sys:String>
+    <sys:String x:Key="S.Tip.Menu">Menu / Settings</sys:String>
+    <sys:String x:Key="S.Tip.Minimize">Minimize</sys:String>
+    <sys:String x:Key="S.Tip.MaxRestore">Maximize / Restore</sys:String>
+    <sys:String x:Key="S.Tip.Close">Close (hide to tray; app keeps running in background, right-click the tray icon to quit)</sys:String>
+    <sys:String x:Key="S.AlwaysOnTop">Always on top (keep window in front)</sys:String>
+    <sys:String x:Key="S.MenuSettings">Settings</sys:String>
+    <sys:String x:Key="S.MenuLanguage">Language</sys:String>
+
+    <!-- ============ Sidebar ============ -->
+    <sys:String x:Key="S.AllTasks">All Tasks</sys:String>
+    <sys:String x:Key="S.Group.AllUncompleted">All To-dos</sys:String>
+    <sys:String x:Key="S.Group.Completed">Done</sys:String>
+    <sys:String x:Key="S.Group.Quadrant">Matrix</sys:String>
+    <sys:String x:Key="S.Group.TagBoard">Tags</sys:String>
+    <sys:String x:Key="S.NewGroup">New Group</sys:String>
+    <sys:String x:Key="S.Help">Help</sys:String>
+    <sys:String x:Key="S.ImportExport">Import / Export</sys:String>
+    <sys:String x:Key="S.ChangeTheme">Theme</sys:String>
+    <sys:String x:Key="S.ChooseTheme">Choose theme</sys:String>
+    <sys:String x:Key="S.AddCustomTheme">＋ Custom theme</sys:String>
+    <!-- Theme group names -->
+    <sys:String x:Key="S.ThemeGroup.Common">Recent</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Favorites">Favorites</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Classic">Classic</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Morandi">Morandi</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Macaron">Macaron</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Dunhuang">Dunhuang</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Mondrian">Mondrian</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Memphis">Memphis</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Rococo">Rococo</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Matisse">Matisse</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Transparent">Transparent</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Custom">Custom</sys:String>
+    <!-- Built-in theme names -->
+    <sys:String x:Key="S.Theme.Light">Light</sys:String>
+    <sys:String x:Key="S.Theme.Dark">Dark</sys:String>
+    <sys:String x:Key="S.Theme.Nord">Nord</sys:String>
+    <sys:String x:Key="S.Theme.Ocean">Ocean</sys:String>
+    <sys:String x:Key="S.Theme.Forest">Forest</sys:String>
+    <sys:String x:Key="S.Theme.Rose">Rose</sys:String>
+    <sys:String x:Key="S.Theme.Oat">Oat</sys:String>
+    <sys:String x:Key="S.Theme.Haze">Haze</sys:String>
+    <sys:String x:Key="S.Theme.Sage">Sage</sys:String>
+    <sys:String x:Key="S.Theme.Graphite">Graphite</sys:String>
+    <sys:String x:Key="S.Theme.Clay">Clay</sys:String>
+    <sys:String x:Key="S.Theme.Fog">Fog</sys:String>
+    <sys:String x:Key="S.Theme.Slate">Slate</sys:String>
+    <sys:String x:Key="S.Theme.Morandi1">Morandi Slate</sys:String>
+    <sys:String x:Key="S.Theme.Morandi2">Morandi Sage</sys:String>
+    <sys:String x:Key="S.Theme.Morandi3">Morandi Mauve</sys:String>
+    <sys:String x:Key="S.Theme.Macaron1">Macaron Mint</sys:String>
+    <sys:String x:Key="S.Theme.Macaron2">Macaron Sakura</sys:String>
+    <sys:String x:Key="S.Theme.Macaron3">Macaron Lemon</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang1">Dunhuang Azure</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang2">Dunhuang Terracotta</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang3">Dunhuang Ink-Gold</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian1">Mondrian Classic</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian2">Mondrian Blue</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian3">Mondrian Night</sys:String>
+    <sys:String x:Key="S.Theme.Transparent">Transparent</sys:String>
+    <sys:String x:Key="S.Theme.Glass">Glass</sys:String>
+    <!-- Extended palettes (per-group, 12 each) -->
+    <sys:String x:Key="S.Theme.Morandi4">Morandi Lilac</sys:String>
+    <sys:String x:Key="S.Theme.Morandi5">Morandi Ash</sys:String>
+    <sys:String x:Key="S.Theme.Morandi6">Morandi Rosewood</sys:String>
+    <sys:String x:Key="S.Theme.Morandi7">Morandi Olive</sys:String>
+    <sys:String x:Key="S.Theme.Morandi8">Morandi Teal</sys:String>
+    <sys:String x:Key="S.Theme.Morandi9">Morandi Latte</sys:String>
+    <sys:String x:Key="S.Theme.Morandi10">Morandi Cyan</sys:String>
+    <sys:String x:Key="S.Theme.Morandi11">Morandi Taupe</sys:String>
+    <sys:String x:Key="S.Theme.Morandi12">Morandi Indigo</sys:String>
+    <sys:String x:Key="S.Theme.Macaron4">Macaron Blueberry</sys:String>
+    <sys:String x:Key="S.Theme.Macaron5">Macaron Grape</sys:String>
+    <sys:String x:Key="S.Theme.Macaron6">Macaron Peach</sys:String>
+    <sys:String x:Key="S.Theme.Macaron7">Macaron Pistachio</sys:String>
+    <sys:String x:Key="S.Theme.Macaron8">Macaron Rose</sys:String>
+    <sys:String x:Key="S.Theme.Macaron9">Macaron Sea Salt</sys:String>
+    <sys:String x:Key="S.Theme.Macaron10">Macaron Caramel</sys:String>
+    <sys:String x:Key="S.Theme.Macaron11">Macaron Lavender</sys:String>
+    <sys:String x:Key="S.Theme.Macaron12">Macaron Watermelon</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang4">Dunhuang Ochre</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang5">Dunhuang Malachite</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang6">Dunhuang Cinnabar</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang7">Dunhuang Indigo</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang8">Dunhuang Violet</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang9">Dunhuang Sand Gold</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang10">Dunhuang Crimson</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang11">Dunhuang Stone Green</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang12">Dunhuang Gamboge</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian4">Mondrian Red</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian5">Mondrian Yellow</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian6">Mondrian Indigo</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian7">Mondrian Grey</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian8">Mondrian Vermilion Night</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian9">Mondrian Blue Night</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian10">Mondrian Amber Night</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian11">Mondrian Green Block</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian12">Mondrian Orange Block</sys:String>
+    <sys:String x:Key="S.Theme.Memphis1">Memphis Candy</sys:String>
+    <sys:String x:Key="S.Theme.Memphis2">Memphis Mint</sys:String>
+    <sys:String x:Key="S.Theme.Memphis3">Memphis Lemon</sys:String>
+    <sys:String x:Key="S.Theme.Memphis4">Memphis Grape</sys:String>
+    <sys:String x:Key="S.Theme.Memphis5">Memphis Coral</sys:String>
+    <sys:String x:Key="S.Theme.Memphis6">Memphis Lagoon</sys:String>
+    <sys:String x:Key="S.Theme.Memphis7">Memphis Cobalt</sys:String>
+    <sys:String x:Key="S.Theme.Memphis8">Memphis Pink</sys:String>
+    <sys:String x:Key="S.Theme.Memphis9">Memphis Orange Night</sys:String>
+    <sys:String x:Key="S.Theme.Memphis10">Memphis Cyan Night</sys:String>
+    <sys:String x:Key="S.Theme.Memphis11">Memphis Berry Night</sys:String>
+    <sys:String x:Key="S.Theme.Memphis12">Memphis Electric Night</sys:String>
+    <sys:String x:Key="S.Theme.Rococo1">Rococo Blush</sys:String>
+    <sys:String x:Key="S.Theme.Rococo2">Rococo Cream</sys:String>
+    <sys:String x:Key="S.Theme.Rococo3">Rococo Powder Blue</sys:String>
+    <sys:String x:Key="S.Theme.Rococo4">Rococo Mint Gold</sys:String>
+    <sys:String x:Key="S.Theme.Rococo5">Rococo Lilac</sys:String>
+    <sys:String x:Key="S.Theme.Rococo6">Rococo Coral Gold</sys:String>
+    <sys:String x:Key="S.Theme.Rococo7">Rococo Ivory</sys:String>
+    <sys:String x:Key="S.Theme.Rococo8">Rococo Rose Gold</sys:String>
+    <sys:String x:Key="S.Theme.Rococo9">Rococo Sky</sys:String>
+    <sys:String x:Key="S.Theme.Rococo10">Rococo Mauve</sys:String>
+    <sys:String x:Key="S.Theme.Rococo11">Rococo Dusk Gold</sys:String>
+    <sys:String x:Key="S.Theme.Rococo12">Rococo Forest Gold</sys:String>
+    <sys:String x:Key="S.Theme.Matisse1">Matisse Azure</sys:String>
+    <sys:String x:Key="S.Theme.Matisse2">Matisse Vermilion</sys:String>
+    <sys:String x:Key="S.Theme.Matisse3">Matisse Emerald</sys:String>
+    <sys:String x:Key="S.Theme.Matisse4">Matisse Yellow</sys:String>
+    <sys:String x:Key="S.Theme.Matisse5">Matisse Pink</sys:String>
+    <sys:String x:Key="S.Theme.Matisse6">Matisse Indigo</sys:String>
+    <sys:String x:Key="S.Theme.Matisse7">Matisse Olive</sys:String>
+    <sys:String x:Key="S.Theme.Matisse8">Matisse Carmine</sys:String>
+    <sys:String x:Key="S.Theme.Matisse9">Matisse Teal</sys:String>
+    <sys:String x:Key="S.Theme.Matisse10">Matisse Violet</sys:String>
+    <sys:String x:Key="S.Theme.Matisse11">Matisse Gold Night</sys:String>
+    <sys:String x:Key="S.Theme.Matisse12">Matisse Peacock</sys:String>
+    <sys:String x:Key="S.Theme.FrostLight">Frost Light</sys:String>
+    <sys:String x:Key="S.Theme.FrostDark">Frost Dark</sys:String>
+    <sys:String x:Key="S.Theme.Mist">Mist</sys:String>
+    <!-- Single-instance prompt -->
+    <sys:String x:Key="S.SingleInstance.Title">Notice</sys:String>
+    <sys:String x:Key="S.SingleInstance.Message">An existing instance is running. Exit it and start this version?</sys:String>
+    <sys:String x:Key="S.CollapseSidebar">Collapse</sys:String>
+    <sys:String x:Key="S.Tip.ToggleSidebar">Show / hide the group bar</sys:String>
+    <sys:String x:Key="S.Export.Md">Export to Markdown</sys:String>
+    <sys:String x:Key="S.Import.Md">Import from Markdown</sys:String>
+
+    <!-- ============ Group context menu ============ -->
+    <sys:String x:Key="S.Group.ChangeColor">Change color</sys:String>
+    <sys:String x:Key="S.Group.ChangeIcon">Change icon</sys:String>
+    <!-- Icon picker -->
+    <sys:String x:Key="S.IconPicker.Title">Choose group icon</sys:String>
+    <sys:String x:Key="S.IconPicker.Import">Import image…</sys:String>
+    <sys:String x:Key="S.IconPicker.ImageFilter">Image files</sys:String>
+    <sys:String x:Key="S.IconCat.Common">Common</sys:String>
+    <sys:String x:Key="S.IconCat.Work">Work</sys:String>
+    <sys:String x:Key="S.IconCat.Study">Study</sys:String>
+    <sys:String x:Key="S.IconCat.Life">Life</sys:String>
+    <sys:String x:Key="S.IconCat.Travel">Travel</sys:String>
+    <sys:String x:Key="S.IconCat.Symbol">Symbols</sys:String>
+    <sys:String x:Key="S.IconCat.Custom">Custom</sys:String>
+    <sys:String x:Key="S.Group.Clear">Clear group</sys:String>
+    <sys:String x:Key="S.Group.ClearCompleted">Clear completed</sys:String>
+    <sys:String x:Key="S.Group.Delete">Delete group</sys:String>
+    <sys:String x:Key="S.GroupColor.Blue">Blue</sys:String>
+    <sys:String x:Key="S.GroupColor.Green">Green</sys:String>
+    <sys:String x:Key="S.GroupColor.Orange">Orange</sys:String>
+    <sys:String x:Key="S.GroupColor.Red">Red</sys:String>
+    <sys:String x:Key="S.GroupColor.Purple">Purple</sys:String>
+    <sys:String x:Key="S.GroupColor.Pink">Pink</sys:String>
+    <sys:String x:Key="S.GroupColor.Teal">Teal</sys:String>
+    <sys:String x:Key="S.GroupColor.Gray">Gray</sys:String>
+
+    <!-- ============ Task context menu ============ -->
+    <sys:String x:Key="S.Task.Edit">Edit (priority / due time)…</sys:String>
+    <sys:String x:Key="S.Task.TogglePin">Pin / Unpin to top</sys:String>
+    <sys:String x:Key="S.Task.ClearDue">Clear due date</sys:String>
+    <sys:String x:Key="S.Task.Indent">Make subtask (indent, Tab)</sys:String>
+    <sys:String x:Key="S.Task.Outdent">Promote one level (outdent, Shift+Tab)</sys:String>
+    <sys:String x:Key="S.Task.ToggleCollapse">Collapse / expand subtasks</sys:String>
+    <sys:String x:Key="S.Task.ToggleReminder">Toggle recurring reminder</sys:String>
+    <sys:String x:Key="S.Task.MoveToGroup">Move to group</sys:String>
+    <sys:String x:Key="S.Task.ToggleComplete">Mark complete / incomplete</sys:String>
+    <sys:String x:Key="S.Task.Delete">Delete task</sys:String>
+    <!-- {0}=completed subtasks, {1}=total subtasks -->
+    <sys:String x:Key="S.Task.SubtaskCount">Subtasks ({0}/{1})</sys:String>
+
+    <!-- ============ Task row tooltips ============ -->
+    <sys:String x:Key="S.Tip.PriorityBar">Priority (right-click to edit)</sys:String>
+    <sys:String x:Key="S.Tip.CollapseArrow">Expand / collapse subtasks</sys:String>
+    <sys:String x:Key="S.Tip.Drag">Drag to reorder</sys:String>
+    <sys:String x:Key="S.Tip.ReminderBell">Recurring reminder on (right-click to toggle)</sys:String>
+
+    <!-- ============ New task panel ============ -->
+    <sys:String x:Key="S.Label.Priority">Priority</sys:String>
+    <sys:String x:Key="S.Label.DueTime">Due time</sys:String>
+    <sys:String x:Key="S.Label.Reminder">Reminder</sys:String>
+    <sys:String x:Key="S.Label.Parent">Parent</sys:String>
+    <sys:String x:Key="S.Tip.Parent">Pick a parent task and the new task becomes its subtask</sys:String>
+    <sys:String x:Key="S.Priority.High">High</sys:String>
+    <sys:String x:Key="S.Priority.Medium">Med</sys:String>
+    <sys:String x:Key="S.Priority.Low">Low</sys:String>
+    <sys:String x:Key="S.Unit.Minute">Minutes</sys:String>
+    <sys:String x:Key="S.Unit.Hour">Hours</sys:String>
+    <sys:String x:Key="S.Unit.Day">Days</sys:String>
+    <sys:String x:Key="S.Unit.Week">Weeks</sys:String>
+    <sys:String x:Key="S.Input.Placeholder">Add a new task, press Enter…</sys:String>
+    <sys:String x:Key="S.Tip.Voice">Voice input (Windows system dictation, Win+H)</sys:String>
+    <sys:String x:Key="S.Add">Add</sys:String>
+
+    <!-- ============ Sorting ============ -->
+    <sys:String x:Key="S.Sort.Custom">Custom (drag)</sys:String>
+    <sys:String x:Key="S.Sort.DueDate">By due date</sys:String>
+    <sys:String x:Key="S.Sort.Priority">By priority</sys:String>
+    <sys:String x:Key="S.Sort.Completed">By status</sys:String>
+    <sys:String x:Key="S.Sort.Created">By created time</sys:String>
+    <sys:String x:Key="S.Sort.Title">By title</sys:String>
+    <sys:String x:Key="S.Fmt.SortTooltip">Sort: {0}</sys:String>
+
+    <!-- ============ Priority dropdown ============ -->
+    <sys:String x:Key="S.PriorityOpt.Low">Low priority</sys:String>
+    <sys:String x:Key="S.PriorityOpt.Medium">Medium priority</sys:String>
+    <sys:String x:Key="S.PriorityOpt.High">High priority</sys:String>
+
+    <!-- ============ Quick times ============ -->
+    <sys:String x:Key="S.Quick.5m">In 5 min</sys:String>
+    <sys:String x:Key="S.Quick.10m">In 10 min</sys:String>
+    <sys:String x:Key="S.Quick.30m">In 30 min</sys:String>
+    <sys:String x:Key="S.Quick.1h">In 1 hour</sys:String>
+    <sys:String x:Key="S.Quick.2h">In 2 hours</sys:String>
+    <sys:String x:Key="S.Quick.5h">In 5 hours</sys:String>
+    <sys:String x:Key="S.Quick.1d">In 1 day</sys:String>
+    <sys:String x:Key="S.Quick.2d">In 2 days</sys:String>
+    <sys:String x:Key="S.Quick.5d">In 5 days</sys:String>
+    <sys:String x:Key="S.Quick.1w">In 1 week</sys:String>
+
+    <!-- ============ New task computed text ============ -->
+    <sys:String x:Key="S.NoTimeSet">No time set</sys:String>
+    <sys:String x:Key="S.ChooseDueTime">Choose due time</sys:String>
+    <sys:String x:Key="S.ChooseReminder">Choose reminder</sys:String>
+    <sys:String x:Key="S.Fmt.EveryWeeks">Every {0} weeks</sys:String>
+    <sys:String x:Key="S.Fmt.EveryDays">Every {0} days</sys:String>
+    <sys:String x:Key="S.Fmt.EveryHours">Every {0} hours</sys:String>
+    <sys:String x:Key="S.Fmt.EveryMinutes">Every {0} min</sys:String>
+
+    <!-- ============ Countdown (task row) ============ -->
+    <sys:String x:Key="S.Done">Done</sys:String>
+    <sys:String x:Key="S.DoneWasOverdue">Done · was overdue</sys:String>
+    <sys:String x:Key="S.Fmt.OverdueDays">{0}d overdue</sys:String>
+    <sys:String x:Key="S.Fmt.OverdueHours">{0}h overdue</sys:String>
+    <sys:String x:Key="S.Fmt.OverdueMinutes">{0}m overdue</sys:String>
+    <sys:String x:Key="S.Fmt.RemainDaysHours">{0}d {1}h left</sys:String>
+    <sys:String x:Key="S.Fmt.RemainDays">{0}d left</sys:String>
+    <sys:String x:Key="S.Fmt.RemainHoursMinutes">{0}h {1}m left</sys:String>
+    <sys:String x:Key="S.Fmt.RemainHours">{0}h left</sys:String>
+    <sys:String x:Key="S.Fmt.RemainMinutes">{0}m left</sys:String>
+
+    <!-- ============ Friendly date (converter) ============ -->
+    <sys:String x:Key="S.Today">Today</sys:String>
+    <sys:String x:Key="S.Tomorrow">Tomorrow</sys:String>
+    <sys:String x:Key="S.Yesterday">Yesterday</sys:String>
+    <sys:String x:Key="S.Fmt.OverdueDaysShort">{0}d overdue</sys:String>
+    <sys:String x:Key="S.Fmt.DaysLater">in {0} days</sys:String>
+    <sys:String x:Key="S.Fmt.MonthDay">MMM d</sys:String>
+
+    <!-- ============ Reminder / import-export / messages (code) ============ -->
+    <sys:String x:Key="S.Fmt.ReminderToastTitle">Task: {0}</sys:String>
+    <sys:String x:Key="S.Fmt.IntervalHours">{0} hours</sys:String>
+    <sys:String x:Key="S.Fmt.IntervalMinutes">{0} minutes</sys:String>
+    <sys:String x:Key="S.Fmt.ReminderMsgWithDue">{0} due. Reminding every {1}.</sys:String>
+    <sys:String x:Key="S.Fmt.ReminderMsg">Reminding every {0}.</sys:String>
+    <sys:String x:Key="S.Toast.ExportTitle">Export complete</sys:String>
+    <sys:String x:Key="S.Fmt.ExportSaved">Saved to: {0}</sys:String>
+    <sys:String x:Key="S.Dialog.ExportTitle">Export to Markdown</sys:String>
+    <sys:String x:Key="S.Md.Filter">Markdown files (*.md)|*.md|All files (*.*)|*.*</sys:String>
+    <sys:String x:Key="S.Fmt.ExportFileName">Todo List {0}.md</sys:String>
+    <sys:String x:Key="S.Fmt.ExportFailed">Export failed: {0}</sys:String>
+    <sys:String x:Key="S.Dialog.ImportTitle">Import from Markdown</sys:String>
+    <sys:String x:Key="S.Md.ImportFilter">Markdown files (*.md;*.markdown;*.txt)|*.md;*.markdown;*.txt|All files (*.*)|*.*</sys:String>
+    <sys:String x:Key="S.Toast.ImportTitle">Import complete</sys:String>
+    <sys:String x:Key="S.Fmt.ImportDone">Imported {0} tasks</sys:String>
+    <sys:String x:Key="S.Import.NoTasks">No task lines recognized (check the Markdown format)</sys:String>
+    <sys:String x:Key="S.Fmt.ImportFailed">Import failed: {0}</sys:String>
+    <sys:String x:Key="S.Voice.HelpTitle">Voice input</sys:String>
+    <sys:String x:Key="S.Voice.HelpBody" xml:space="preserve">Could not start system voice input. Enable it or invoke it manually:
+
+1. Make sure you are on Windows 10 (version 1809 or later) or Windows 11.
+2. Open Settings → Privacy &amp; security → Speech (or Time &amp; language → Speech), turn on Online speech recognition, and allow microphone access under Accessibility → Speech.
+3. Put the cursor in the input box below and press Win + H to open the voice typing bar, then speak into your microphone.
+   First use may require downloading speech components online and granting microphone permission.</sys:String>
+    <sys:String x:Key="S.Fmt.VoiceErrorDetail">Error details: {0}</sys:String>
+
+    <!-- ============ Settings dialog ============ -->
+    <sys:String x:Key="S.Settings.Title">Settings</sys:String>
+    <sys:String x:Key="S.Settings.Nav.Todo">To-do</sys:String>
+    <sys:String x:Key="S.Settings.Nav.Inbox">Inbox</sys:String>
+    <sys:String x:Key="S.Settings.Nav.General">General</sys:String>
+    <sys:String x:Key="S.Settings.Nav.Font">Font</sys:String>
+    <sys:String x:Key="S.Settings.Nav.About">About</sys:String>
+    <sys:String x:Key="S.Settings.NoteFont">Note font</sys:String>
+    <sys:String x:Key="S.Settings.NoteFontDesc">Font, size and line spacing for note text (independent from the task area; affects the note editor only)</sys:String>
+    <sys:String x:Key="S.About.Support">Support the developer</sys:String>
+    <sys:String x:Key="S.About.SupportDesc">This is a free little tool I build in my spare time. If it helps you, please give the project a ⭐ Star on GitHub — it's the best encouragement for the author and helps more people discover it.</sys:String>
+    <sys:String x:Key="S.About.StarButton">Star on GitHub</sys:String>
+    <sys:String x:Key="S.Settings.Holidays">Show holidays</sys:String>
+    <sys:String x:Key="S.Settings.HolidaysDesc">Mark Chinese public holidays on the calendar and highlight days off (fetched online; first run needs a connection)</sys:String>
+    <sys:String x:Key="S.Settings.RestoreDefaults">Restore defaults</sys:String>
+    <sys:String x:Key="S.Settings.RestoreDefaultsDesc">Restore appearance, toggles, layout sizes and to-do/note typography to defaults (your language and your notes, groups and tasks are untouched)</sys:String>
+    <sys:String x:Key="S.Settings.RestoreDone">All settings restored to defaults.</sys:String>
+    <sys:String x:Key="S.Settings.AutoStart">Run at startup</sys:String>
+    <sys:String x:Key="S.Settings.AutoStartDesc">Launch automatically when you sign in to Windows (current user)</sys:String>
+    <sys:String x:Key="S.Settings.Effects">Completion effect</sys:String>
+    <sys:String x:Key="S.Settings.EffectsDesc">Play a fireworks animation when a task is completed</sys:String>
+    <sys:String x:Key="S.Settings.Sound">Completion sound</sys:String>
+    <sys:String x:Key="S.Settings.SoundDesc">Play an upbeat celebration tune when a task is completed</sys:String>
+    <sys:String x:Key="S.Settings.ReminderSound">Reminder sound</sys:String>
+    <sys:String x:Key="S.Settings.ReminderSoundDesc">Play a soft chime when a recurring reminder fires (off = bottom-left notification only)</sys:String>
+    <sys:String x:Key="S.Settings.OpFailed">Operation failed, please try again.</sys:String>
+    <sys:String x:Key="S.Settings.AutoStartOn">Enabled: run at startup.</sys:String>
+    <sys:String x:Key="S.Settings.AutoStartOff">Disabled: run at startup.</sys:String>
+    <sys:String x:Key="S.Settings.Font">Font</sys:String>
+    <sys:String x:Key="S.Settings.FontDesc">Adjust the font, size and line spacing of task &amp; body text (icons and chrome are unaffected)</sys:String>
+    <sys:String x:Key="S.Settings.FontFamily">Font</sys:String>
+    <sys:String x:Key="S.Settings.FontSize">Size</sys:String>
+    <sys:String x:Key="S.Settings.LineSpacing">Spacing</sys:String>
+    <!-- Font size quick presets -->
+    <sys:String x:Key="S.Size.Small">Small</sys:String>
+    <sys:String x:Key="S.Size.Medium">Medium</sys:String>
+    <sys:String x:Key="S.Size.Large">Large</sys:String>
+    <sys:String x:Key="S.Settings.CheckboxSize">Checkbox</sys:String>
+    <!-- Auto-update settings -->
+    <sys:String x:Key="S.Settings.AutoUpdate">Check for updates automatically</sys:String>
+    <sys:String x:Key="S.Settings.AutoUpdateDesc">Check GitHub for a new version at startup and hourly (turn off to stop auto-checking)</sys:String>
+    <sys:String x:Key="S.Settings.CheckUpdate">Check for updates</sys:String>
+    <sys:String x:Key="S.Settings.CheckUpdateDesc">Check now whether a newer version is available</sys:String>
+    <sys:String x:Key="S.Settings.ManualDownload">Download update manually</sys:String>
+    <sys:String x:Key="S.Settings.ManualDownloadDesc">Open the latest release page in your browser to manually download and install the latest exe</sys:String>
+    <sys:String x:Key="S.Settings.ManualDownloadBtn">Open download</sys:String>
+    <sys:String x:Key="S.Settings.ManualDownloadHint">The latest release page is now open in your browser. Please download and run the latest exe.</sys:String>
+    <sys:String x:Key="S.Settings.Reinstall">Reinstall current version</sys:String>
+    <sys:String x:Key="S.Settings.ReinstallDesc">Re-download and install the current version (repairs a broken or sluggish install)</sys:String>
+    <sys:String x:Key="S.Settings.ReinstallBtn">Reinstall</sys:String>
+
+    <!-- ============ Auto-update dialog ============ -->
+    <sys:String x:Key="S.Update.Title">Update available</sys:String>
+    <sys:String x:Key="S.Update.NewVersion">New version {0} available (current {1})</sys:String>
+    <sys:String x:Key="S.Update.Reinstall">Reinstall current version {0}</sys:String>
+    <sys:String x:Key="S.Update.NoAsset">No installable package is available for this version.</sys:String>
+    <sys:String x:Key="S.Update.WhatsNew">What's new</sys:String>
+    <sys:String x:Key="S.Update.Now">Update now</sys:String>
+    <sys:String x:Key="S.Update.Ignore">Ignore</sys:String>
+    <sys:String x:Key="S.Update.SkipThis">Skip this version</sys:String>
+    <sys:String x:Key="S.Update.Downloading">Downloading update…</sys:String>
+    <sys:String x:Key="S.Update.Checking">Checking for updates…</sys:String>
+    <sys:String x:Key="S.Update.UpToDate">You are on the latest version.</sys:String>
+    <sys:String x:Key="S.Update.CheckFailed">Update check failed, please try again later.</sys:String>
+    <sys:String x:Key="S.Update.DownloadFailed">Download failed, please try again later.</sys:String>
+    <sys:String x:Key="S.Update.LaunchFailed.Title">Couldn't start the new version</sys:String>
+    <sys:String x:Key="S.Update.LaunchFailed.Message">The new version was downloaded but couldn't start automatically. Please run it manually from the location below:</sys:String>
+    <sys:String x:Key="S.Update.OpenFolder">Open folder</sys:String>
+    <sys:String x:Key="S.Update.RunNow">Run now</sys:String>
+    <sys:String x:Key="S.Update.Close">Close</sys:String>
+
+    <!-- ============ Font names ============ -->
+    <sys:String x:Key="S.Font.System">System default</sys:String>
+    <sys:String x:Key="S.Font.YaHei">Microsoft YaHei</sys:String>
+    <sys:String x:Key="S.Font.SimSun">SimSun (Song)</sys:String>
+    <sys:String x:Key="S.Font.KaiTi">KaiTi</sys:String>
+    <sys:String x:Key="S.Font.SimHei">SimHei (Gothic)</sys:String>
+    <sys:String x:Key="S.Font.FangSong">FangSong</sys:String>
+    <sys:String x:Key="S.Font.SegoeUI">Segoe UI</sys:String>
+    <sys:String x:Key="S.Font.Consolas">Consolas</sys:String>
+
+    <!-- ============ Help dialog ============ -->
+    <sys:String x:Key="S.Help.Title">Help</sys:String>
+    <sys:String x:Key="S.Help.Ok">Got it</sys:String>
+
+    <sys:String x:Key="S.Help.Tasks.Title">Tasks</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L1">Type in the bottom-right box and press Enter or click "Add" to create a task.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L2">After typing, a panel with priority, due time and the "Reminder" toggle pops up above.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L3">Pick a quick time (in 5 min … in 1 week) or use "Custom" down to the minute.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L4">Click a task title to edit it; right-click a task to edit, clear the due date, complete or delete it.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L5">Completed tasks move into the "Done" group automatically; unchecking restores them.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L6">Drag tasks to reorder; long titles show only the beginning.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L7">Right-click a task and choose "Pin / Unpin to top": a pinned top-level task keeps its whole family at the very top, regardless of the sort order.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L8">When setting a due time or recurring reminder, just pick the date/time or enter a value and it applies instantly — no "Set" button needed; the "Clear" button on each undoes it anytime.</sys:String>
+
+    <sys:String x:Key="S.Help.Subtasks.Title">Subtasks &amp; indenting</sys:String>
+    <sys:String x:Key="S.Help.Subtasks.L1">Select a task and press Tab to indent it into a subtask of the one above; Shift+Tab promotes it.</sys:String>
+    <sys:String x:Key="S.Help.Subtasks.L2">The right-click menu also offers "Make subtask / Promote", up to 6 nesting levels.</sys:String>
+    <sys:String x:Key="S.Help.Subtasks.L3">Indent levels are preserved through Markdown import/export (expressed as list nesting).</sys:String>
+
+    <sys:String x:Key="S.Help.Schedule.Title">Schedule / calendar</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L1">Click the calendar button at the top-right of the content header to open or close the embedded schedule panel on the right.</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L2">Switch Day / Week / Month. Day and Week show a 0–24 hour axis on the left and place tasks by their due time — all 24 hours fit in one screen.</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L3">Click a task block in the calendar to view and edit it; drag the middle divider to resize the to-do list and the calendar.</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L4">With the calendar open, dragging the window edge resizes only the calendar — the to-do list keeps its width, and is resized only via the middle divider.</sys:String>
+
+    <sys:String x:Key="S.Help.Voice.Title">Voice input</sys:String>
+    <sys:String x:Key="S.Help.Voice.L1">The microphone button next to the new-task box triggers Windows dictation (same as Win+H).</sys:String>
+    <sys:String x:Key="S.Help.Voice.L2">First use requires enabling voice typing under Settings → Time &amp; language → Speech.</sys:String>
+
+    <sys:String x:Key="S.Help.Reminder.Title">Recurring reminders</sys:String>
+    <sys:String x:Key="S.Help.Reminder.L1">When creating a task, tick "Reminder" and set an interval (30 min by default).</sys:String>
+    <sys:String x:Key="S.Help.Reminder.L2">When it fires, a bottom-left notification appears and, if "Reminder sound" is on, a soft chime plays.</sys:String>
+    <sys:String x:Key="S.Help.Reminder.L3">Reminders stop once a task is completed; right-click a task to toggle the switch anytime.</sys:String>
+
+    <sys:String x:Key="S.Help.IO.Title">Import / Export Markdown</sys:String>
+    <sys:String x:Key="S.Help.IO.L1">"Import / Export" in the sidebar exports the current list to .md, or imports tasks from a .md file.</sys:String>
+    <sys:String x:Key="S.Help.IO.L2">The format is editor-friendly: groups use ## headings, each task line is - [ ] / - [x].</sys:String>
+    <sys:String x:Key="S.Help.IO.L3">Subtask indents are written as two spaces per level and restored on import.</sys:String>
+
+    <sys:String x:Key="S.Help.Dock.Title">Edge auto-hide</sys:String>
+    <sys:String x:Key="S.Help.Dock.L1">Drag the window to the top / left / right screen edge and it slides out and hides.</sys:String>
+    <sys:String x:Key="S.Help.Dock.L2">Move the mouse to that screen edge to slide it back; it hides again once you move away.</sys:String>
+    <sys:String x:Key="S.Help.Dock.L3">Drag the title bar again to undock and return to a normal window.</sys:String>
+
+    <sys:String x:Key="S.Help.Group.Title">Groups</sys:String>
+    <sys:String x:Key="S.Help.Group.L1">The left sidebar is the group bar: click "All Tasks" to see everything, or a group name to switch.</sys:String>
+    <sys:String x:Key="S.Help.Group.L2">"New Group" adds a custom group; drag groups to reorder them.</sys:String>
+    <sys:String x:Key="S.Help.Group.L3">Right-click a group to change color / clear / delete it ("Done" cannot be deleted).</sys:String>
+    <sys:String x:Key="S.Help.Group.L4">Drag to resize the sidebar; "Collapse" folds it into a narrow icon rail, click again to expand.</sys:String>
+
+    <sys:String x:Key="S.Help.Theme.Title">Themes &amp; settings</sys:String>
+    <sys:String x:Key="S.Help.Theme.L1">"Theme" switches built-in themes (incl. transparent, glass) or creates a custom theme.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L2">The top-right menu → "Settings" toggles run-at-startup, completion effect, completion sound and reminder sound.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L3">Click the sort button to the right of the title to choose a sort order.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L4">"Settings" lets you adjust the font, size and line spacing of task &amp; body text; changes apply instantly and are saved automatically.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L5">The theme picker is a separate, draggable, resizable window beside the app; ~90 palettes are grouped by style (Classic / Morandi / Macaron / Dunhuang / Mondrian / Memphis / Rococo / Matisse / Transparent), with a group bar to jump to any group.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L6">Right-click any theme to add or remove it from Favorites; the Favorites group sits first and can be drag-reordered; when empty it shows a right-click hint.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L7">Create / edit custom themes with the built-in HSV color picker; the whole UI (including the calendar) previews live while editing, and reverts to your previous theme if you close without saving. Right-click a custom theme to edit or delete it.</sys:String>
+
+    <sys:String x:Key="S.Help.Window.Title">Window</sys:String>
+    <sys:String x:Key="S.Help.Window.L1">Top-right red / yellow / green: close to tray / minimize / maximize-restore.</sys:String>
+    <sys:String x:Key="S.Help.Window.L2">Closing only hides to the system tray; double-click the tray icon to restore, right-click to quit.</sys:String>
+    <sys:String x:Key="S.Help.Window.L3">The pin button to the left of the menu button keeps the window always on top.</sys:String>
+    <sys:String x:Key="S.Help.Window.L4">When you choose "Show" from the tray while the window is hidden against a screen edge, it un-docks and re-centers automatically.</sys:String>
+
+    <sys:String x:Key="S.Help.Update.Title">Auto-update / About</sys:String>
+    <sys:String x:Key="S.Help.Update.L1">On startup and periodically afterward, the app checks GitHub for a newer version and prompts you; one click downloads it and restarts into the new version (self-contained single file, no runtime install needed).</sys:String>
+    <sys:String x:Key="S.Help.Update.L2">You can choose "Skip this version" in the prompt, or turn off automatic update checks in Settings.</sys:String>
+    <sys:String x:Key="S.Help.Update.L3">Top-right menu → "About" shows the current version and lets you manually check / download the latest build.</sys:String>
+
+    <sys:String x:Key="S.Help.Contact.Title">Contact the developer</sys:String>
+    <sys:String x:Key="S.Help.Contact.L1">This project on GitHub: https://github.com/wangchao199703/MinimalTodoApp</sys:String>
+
+    <!-- ============ Custom theme editor ============ -->
+    <sys:String x:Key="S.ThemeEditor.Title">Custom theme</sys:String>
+    <sys:String x:Key="S.ThemeEditor.EditTitle">Edit theme</sys:String>
+    <sys:String x:Key="S.ThemeEditor.PickColor">Click to pick a color</sys:String>
+    <sys:String x:Key="S.ThemeCtx.Favorite">Add to favorites</sys:String>
+    <sys:String x:Key="S.ThemeCtx.Unfavorite">Remove from favorites</sys:String>
+    <sys:String x:Key="S.ThemeFav.Empty">No favorites yet — right-click any theme to add it here.</sys:String>
+    <sys:String x:Key="S.ThemeCtx.Edit">Edit theme</sys:String>
+    <sys:String x:Key="S.ThemeCtx.Delete">Delete theme</sys:String>
+    <sys:String x:Key="S.ThemeEditor.Name">Theme name</sys:String>
+    <sys:String x:Key="S.ThemeEditor.DefaultName">My theme</sys:String>
+    <sys:String x:Key="S.ThemeEditor.BaseOn">Based on an existing theme (auto-fills the rest)</sys:String>
+    <sys:String x:Key="S.ThemeEditor.ColorHint">Colors accept #RRGGBB or #AARRGGBB with alpha.</sys:String>
+    <sys:String x:Key="S.ThemeField.WindowBg">Window bg</sys:String>
+    <sys:String x:Key="S.ThemeField.TitleBar">Title bar</sys:String>
+    <sys:String x:Key="S.ThemeField.Sidebar">Sidebar</sys:String>
+    <sys:String x:Key="S.ThemeField.Card">Card</sys:String>
+    <sys:String x:Key="S.ThemeField.Input">Input</sys:String>
+    <sys:String x:Key="S.ThemeField.PrimaryText">Primary text</sys:String>
+    <sys:String x:Key="S.ThemeField.SecondaryText">Secondary text</sys:String>
+    <sys:String x:Key="S.ThemeField.Accent">Accent</sys:String>
+    <sys:String x:Key="S.ThemeField.AccentText">Accent text</sys:String>
+    <sys:String x:Key="S.ThemeField.Divider">Divider</sys:String>
+
+    <!-- ============ Edit task dialog ============ -->
+    <sys:String x:Key="S.TaskEdit.Title">Edit task</sys:String>
+    <sys:String x:Key="S.TaskEdit.Content">Task content</sys:String>
+    <sys:String x:Key="S.TaskEdit.DueDate">Due date</sys:String>
+    <sys:String x:Key="S.TaskEdit.Enable">Enable</sys:String>
+    <sys:String x:Key="S.TaskEdit.DefaultTimeHint">No time picked defaults to 00:00</sys:String>
+
+    <!-- ============ Schedule / calendar ============ -->
+    <sys:String x:Key="S.Schedule.Title">Schedule</sys:String>
+    <sys:String x:Key="S.Schedule.Tooltip">View todos on a calendar by due date</sys:String>
+    <sys:String x:Key="S.Schedule.Day">Day</sys:String>
+    <sys:String x:Key="S.Schedule.Week">Week</sys:String>
+    <sys:String x:Key="S.Schedule.Month">Month</sys:String>
+    <sys:String x:Key="S.Schedule.Today">Today</sys:String>
+    <sys:String x:Key="S.Schedule.Prev">Previous</sys:String>
+    <sys:String x:Key="S.Schedule.Next">Next</sys:String>
+    <sys:String x:Key="S.Schedule.NoTasks">No due-dated todos in this period</sys:String>
+    <sys:String x:Key="S.Schedule.DragToSetTime">Drag a to-do from the left onto a time to set its due time</sys:String>
+    <sys:String x:Key="S.Schedule.WeekdayHeaders">Mon,Tue,Wed,Thu,Fri,Sat,Sun</sys:String>
+    <sys:String x:Key="S.Schedule.AllDay">All-day / no time</sys:String>
+    <sys:String x:Key="S.Schedule.Done">Done</sys:String>
+    <sys:String x:Key="S.Schedule.DragHint.Title">Tip: drag to set a due time</sys:String>
+    <sys:String x:Key="S.Schedule.DragHint.Body">You can drag a to-do from the left onto the calendar to set its due time:&#x0a;· Day / Week view: drop on an hour to set that exact hour&#x0a;· Month view: drop on a day to set it to 18:00&#x0a;&#x0a;(This tip is shown only once)</sys:String>
+    <sys:String x:Key="S.Fmt.YearMonth">{1}/{0}</sys:String>
+    <sys:String x:Key="S.Fmt.DayTitle">{0}-{1}-{2} ({3})</sys:String>
+    <sys:String x:Key="S.Fmt.MoreCount">+{0}</sys:String>
+
+    <!-- ============ Toast notification ============ -->
+    <sys:String x:Key="S.Toast.DefaultTitle">Todo reminder</sys:String>
+    <sys:String x:Key="S.Toast.ClickToClose">Click to close</sys:String>
+
+    <!-- ============ Notes (v1.2.0) ============ -->
+    <sys:String x:Key="S.Note.Inbox">Inbox</sys:String>
+    <sys:String x:Key="S.Note.WriteSomething">Write something</sys:String>
+    <sys:String x:Key="S.Note.Untitled">Untitled note</sys:String>
+    <sys:String x:Key="S.Note.New">New note</sys:String>
+    <sys:String x:Key="S.Note.Delete">Delete note</sys:String>
+    <sys:String x:Key="S.Note.Rename">Rename</sys:String>
+    <sys:String x:Key="S.Note.DeleteConfirm">Delete this note? This cannot be undone.</sys:String>
+    <sys:String x:Key="S.Note.Bold">Bold (Ctrl+B)</sys:String>
+    <sys:String x:Key="S.Note.Italic">Italic (Ctrl+I)</sys:String>
+    <sys:String x:Key="S.Note.Underline">Underline (Ctrl+U)</sys:String>
+    <sys:String x:Key="S.Note.Strikethrough">Strikethrough</sys:String>
+    <sys:String x:Key="S.Note.Heading">Heading (cycles H1→H2→H3)</sys:String>
+    <sys:String x:Key="S.Note.Bullet">Bullet list</sys:String>
+    <sys:String x:Key="S.Note.TaskList">Task list (checkable)</sys:String>
+    <sys:String x:Key="S.Note.TextColor">Text color</sys:String>
+    <sys:String x:Key="S.Note.FontSize">Font size</sys:String>
+    <sys:String x:Key="S.Note.DefaultColor">Default color</sys:String>
+    <sys:String x:Key="S.Note.DefaultSize">Default size</sys:String>
+    <sys:String x:Key="S.Note.AddToTodo">Add to to-do</sys:String>
+    <sys:String x:Key="S.Note.InsertImage">Insert image</sys:String>
+    <sys:String x:Key="S.Note.NewGroup">New group</sys:String>
+    <sys:String x:Key="S.Note.NewGroupName">New group</sys:String>
+    <sys:String x:Key="S.Note.RenameGroup">Rename group</sys:String>
+    <sys:String x:Key="S.Note.DeleteGroup">Delete group</sys:String>
+    <sys:String x:Key="S.Note.GroupDeleteConfirm">Delete this group? Its notes will move back to the inbox root and won't be deleted.</sys:String>
+    <sys:String x:Key="S.Note.ToggleCollapse">Collapse / Expand</sys:String>
+    <sys:String x:Key="S.Note.UntitledGroup">Untitled group</sys:String>
+
+    <!-- ============ Group context menu (v1.2.0 patch 4) ============ -->
+    <sys:String x:Key="S.Group.New">New group</sys:String>
+    <sys:String x:Key="S.Group.NewName">New group</sys:String>
+    <sys:String x:Key="S.Group.Rename">Rename</sys:String>
+    <sys:String x:Key="S.Group.ToggleCollapse">Collapse / Expand</sys:String>
+
+    <!-- ============ Editor context menu ============ -->
+    <sys:String x:Key="S.Menu.Cut">Cut</sys:String>
+    <sys:String x:Key="S.Menu.Copy">Copy</sys:String>
+    <sys:String x:Key="S.Menu.Paste">Paste</sys:String>
+
+    <!-- ============ To-do priority block (v1.2.0 patch 5) ============ -->
+    <sys:String x:Key="S.Settings.PriorityBlock">Priority color block before to-do</sys:String>
+    <sys:String x:Key="S.Settings.PriorityBlockDesc">When on, the checkbox ring shows no priority color; a red/yellow/green block in front of each task indicates priority instead.</sys:String>
+
+    <!-- ============ Eisenhower matrix (v1.2.1) ============ -->
+    <sys:String x:Key="S.Quadrant.Q1Title">Do First</sys:String>
+    <sys:String x:Key="S.Quadrant.Q1Desc">Important &amp; Urgent</sys:String>
+    <sys:String x:Key="S.Quadrant.Q2Title">Schedule</sys:String>
+    <sys:String x:Key="S.Quadrant.Q2Desc">Important &amp; Not Urgent</sys:String>
+    <sys:String x:Key="S.Quadrant.Q3Title">Delegate</sys:String>
+    <sys:String x:Key="S.Quadrant.Q3Desc">Not Important &amp; Urgent</sys:String>
+    <sys:String x:Key="S.Quadrant.Q4Title">Eliminate</sys:String>
+    <sys:String x:Key="S.Quadrant.Q4Desc">Not Important &amp; Not Urgent</sys:String>
+    <sys:String x:Key="S.Settings.QuadrantImportant">Matrix: count "Medium" priority as important</sys:String>
+    <sys:String x:Key="S.Settings.QuadrantImportantDesc">By default both "High" and "Medium" count as important; turn off to treat only "High" as important.</sys:String>
+    <sys:String x:Key="S.Settings.QuadrantUrgent">Matrix: count "due within 3 days" as urgent</sys:String>
+    <sys:String x:Key="S.Settings.QuadrantUrgentDesc">By default only "overdue or due today" is urgent; turn on to also treat "due within 3 days" as urgent.</sys:String>
+
+    <!-- ============ Tags / Tag board (v1.2.2) ============ -->
+    <sys:String x:Key="S.Tag.Untagged">Untagged</sys:String>
+    <sys:String x:Key="S.Tag.New">Add</sys:String>
+    <sys:String x:Key="S.Tag.Label">Tag</sys:String>
+    <sys:String x:Key="S.Tag.AddPlaceholder">Add a task…</sys:String>
+    <sys:String x:Key="S.Tag.Rename">Rename</sys:String>
+    <sys:String x:Key="S.Tag.ChangeIcon">Change icon</sys:String>
+    <sys:String x:Key="S.Tag.Delete">Delete tag</sys:String>
+
+</ResourceDictionary>
